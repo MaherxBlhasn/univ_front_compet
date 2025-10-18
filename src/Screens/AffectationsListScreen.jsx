@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Trash, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Trash, RefreshCw, Calendar } from 'lucide-react';
 import { useSession } from '../contexts/SessionContext';
 import { fetchAffectations, permuterAffectations, fetchEnseignants, deleteAllAffectations } from '../services/api';
 import Header from '@components/Layout/Header';
@@ -24,12 +24,52 @@ const AffectationsListScreen = () => {
   const [showError, setShowError] = useState(false);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [selectedForSwap, setSelectedForSwap] = useState(null); // For click-to-swap alternative
+  const [modalSource, setModalSource] = useState(null); // Stable copy for modal
+  const [modalTarget, setModalTarget] = useState(null); // Stable copy for modal
+  
+  // Refs for date sections to enable scrolling
+  const dateRefs = useRef({});
+  const scrollContainerRef = useRef(null);
+  const dateScrollRef = useRef(null);
+  const enseignantScrollRef = useRef(null);
+  const salleScrollRef = useRef(null);
+  const dragScrollInterval = useRef(null);
+  const isScrolling = useRef(false);
 
   useEffect(() => {
     if (currentSession?.id_session) {
       loadAffectations();
     }
   }, [currentSession]);
+
+  // Reset quick access scroll position when groupBy changes
+  useEffect(() => {
+    // Scroll the main container to top
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+    
+    // Reset horizontal scroll for quick access sections
+    setTimeout(() => {
+      if (dateScrollRef.current) {
+        dateScrollRef.current.scrollLeft = 0;
+      }
+      if (enseignantScrollRef.current) {
+        enseignantScrollRef.current.scrollLeft = 0;
+      }
+      if (salleScrollRef.current) {
+        salleScrollRef.current.scrollLeft = 0;
+      }
+    }, 100);
+  }, [groupBy]);
+
+  // Cleanup auto-scroll on unmount
+  useEffect(() => {
+    return () => {
+      stopAutoScroll();
+    };
+  }, []);
 
   const loadAffectations = async () => {
     if (!currentSession?.id_session) return;
@@ -86,36 +126,138 @@ const AffectationsListScreen = () => {
     return colors[code % colors.length];
   };
 
+  // Check if swap is allowed between two affectations and return reason if not
+  const getSwapValidation = (aff1, aff2) => {
+    if (!aff1 || !aff2) {
+      return { valid: false, reason: 'Données manquantes' };
+    }
+    
+    // Same affectation
+    if (aff1.affectation_id === aff2.affectation_id) {
+      return { valid: false, reason: 'Impossible d\'échanger une affectation avec elle-même' };
+    }
+    
+    // Same teacher
+    if (aff1.code_smartex_ens === aff2.code_smartex_ens) {
+      return { 
+        valid: false, 
+        reason: `Impossible d'échanger : même enseignant (${getTeacherName(aff1.code_smartex_ens)})` 
+      };
+    }
+    
+    // Different sessions
+    if (aff1.id_session !== aff2.id_session) {
+      return { 
+        valid: false, 
+        reason: 'Impossible d\'échanger : les affectations ne sont pas dans la même session' 
+      };
+    }
+    
+    // Same room AND same time slot
+    if (
+      aff1.cod_salle === aff2.cod_salle &&
+      aff1.date_examen === aff2.date_examen &&
+      aff1.h_debut === aff2.h_debut &&
+      aff1.h_fin === aff2.h_fin
+    ) {
+      return { 
+        valid: false, 
+        reason: `Impossible d'échanger : même salle (${aff1.cod_salle}) et même créneau (${aff1.date_examen} ${aff1.h_debut}-${aff1.h_fin})` 
+      };
+    }
+    
+    return { valid: true };
+  };
+
+  // Simple check for backwards compatibility
+  const canSwap = (aff1, aff2) => {
+    return getSwapValidation(aff1, aff2).valid;
+  };
+
   // Handle drop - show confirmation modal
   const handleDrop = (targetAffectation) => {
-    if (!draggedProf || draggedProf.affectation_id === targetAffectation.affectation_id) {
+    console.log('🎯 handleDrop called', { 
+      draggedProf: draggedProf?.code_smartex_ens, 
+      target: targetAffectation?.code_smartex_ens 
+    });
+    
+    if (!draggedProf || !targetAffectation) {
+      console.warn('⚠️ Invalid drop: missing draggedProf or targetAffectation');
+      return;
+    }
+    
+    if (draggedProf.affectation_id === targetAffectation.affectation_id) {
+      console.warn('⚠️ Cannot swap with self');
       return;
     }
 
-    // Show confirmation modal
+    // Validate swap with detailed reason
+    const validation = getSwapValidation(draggedProf, targetAffectation);
+    console.log('🔍 Validation result:', validation);
+    
+    if (!validation.valid) {
+      console.warn('⚠️ Swap not allowed:', validation.reason);
+      console.log('📢 Setting error message and showing toast');
+      
+      // Show detailed error message
+      setErrorMessage(validation.reason);
+      setShowError(true);
+      
+      console.log('✅ Error state set:', { 
+        errorMessage: validation.reason, 
+        showError: true 
+      });
+      
+      setTimeout(() => {
+        console.log('⏱️ Auto-hiding error toast');
+        setShowError(false);
+      }, 5000);
+      
+      // Clear drag state
+      setDraggedProf(null);
+      return;
+    }
+
+    console.log('✅ Opening swap modal', { 
+      from: draggedProf.code_smartex_ens, 
+      to: targetAffectation.code_smartex_ens 
+    });
+
+    // Store stable copies for modal to prevent glitching
+    setModalSource(draggedProf);
+    setModalTarget(targetAffectation);
     setSwapTarget(targetAffectation);
-    setShowSwapModal(true);
+    
+    // Show modal after ensuring state is set
+    setTimeout(() => {
+      setShowSwapModal(true);
+    }, 50);
   };
 
   // Confirm swap and call API
   const confirmSwap = async () => {
-    if (!draggedProf || !swapTarget) return;
+    if (!modalSource || !modalTarget) {
+      console.error('❌ Missing modal source or target');
+      return;
+    }
 
     try {
       setSwapping(true);
 
-      // Call permuter API
+      // Call permuter API using stable copies
       const result = await permuterAffectations(
-        draggedProf.affectation_id,
-        swapTarget.affectation_id
+        modalSource.affectation_id,
+        modalTarget.affectation_id
       );
 
       console.log('✅ Permutation réussie:', result);
 
-      // Close modal
+      // Close modal and clear all states
       setShowSwapModal(false);
       setSwapTarget(null);
       setDraggedProf(null);
+      setModalSource(null);
+      setModalTarget(null);
 
       // Reload affectations
       await loadAffectations();
@@ -142,9 +284,102 @@ const AffectationsListScreen = () => {
 
   // Cancel swap
   const cancelSwap = () => {
+    console.log('🚫 Swap cancelled');
     setShowSwapModal(false);
     setSwapTarget(null);
     setDraggedProf(null);
+    setModalSource(null);
+    setModalTarget(null);
+  };
+
+  // Auto-scroll during drag - improved version
+  const handleDragMove = (e) => {
+    if (!scrollContainerRef.current || !draggedProf) return;
+    
+    const container = scrollContainerRef.current;
+    const rect = container.getBoundingClientRect();
+    const scrollZone = 80; // pixels from edge to trigger scroll
+    const scrollSpeed = 3; // Reduced from 10 to 3 for slower, smoother scroll
+    
+    // Mouse position relative to viewport
+    const mouseY = e.clientY;
+    
+    // Determine if we should scroll and in which direction
+    let shouldScrollUp = mouseY < rect.top + scrollZone && container.scrollTop > 0;
+    let shouldScrollDown = mouseY > rect.bottom - scrollZone && 
+                           container.scrollTop < container.scrollHeight - container.clientHeight;
+    
+    // Stop scrolling if not in scroll zone
+    if (!shouldScrollUp && !shouldScrollDown) {
+      stopAutoScroll();
+      return;
+    }
+    
+    // Start scrolling only if not already scrolling
+    if (!isScrolling.current) {
+      isScrolling.current = true;
+      
+      const scroll = () => {
+        if (!draggedProf || !scrollContainerRef.current) {
+          stopAutoScroll();
+          return;
+        }
+        
+        const container = scrollContainerRef.current;
+        
+        if (shouldScrollUp && container.scrollTop > 0) {
+          container.scrollTop -= scrollSpeed;
+        } else if (shouldScrollDown && container.scrollTop < container.scrollHeight - container.clientHeight) {
+          container.scrollTop += scrollSpeed;
+        }
+        
+        // Continue scrolling
+        dragScrollInterval.current = requestAnimationFrame(scroll);
+      };
+      
+      scroll();
+    }
+  };
+
+  // Stop auto-scroll
+  const stopAutoScroll = () => {
+    if (dragScrollInterval.current) {
+      cancelAnimationFrame(dragScrollInterval.current);
+      dragScrollInterval.current = null;
+    }
+    isScrolling.current = false;
+  };
+
+  // Click-to-swap alternative method
+  const handleSelectForSwap = (affectation) => {
+    if (!selectedForSwap) {
+      // First selection
+      setSelectedForSwap(affectation);
+    } else if (selectedForSwap.affectation_id === affectation.affectation_id) {
+      // Clicked same row - deselect
+      setSelectedForSwap(null);
+    } else {
+      // Second selection - validate with detailed reason
+      const validation = getSwapValidation(selectedForSwap, affectation);
+      if (!validation.valid) {
+        console.warn('⚠️ Click-to-swap not allowed:', validation.reason);
+        setErrorMessage(validation.reason);
+        setShowError(true);
+        setTimeout(() => setShowError(false), 5000);
+        setSelectedForSwap(null);
+        return;
+      }
+      
+      // Initiate swap
+      setModalSource(selectedForSwap);
+      setModalTarget(affectation);
+      setDraggedProf(selectedForSwap);
+      setSwapTarget(affectation);
+      setTimeout(() => {
+        setShowSwapModal(true);
+      }, 50);
+      setSelectedForSwap(null);
+    }
   };
 
   // Delete all affectations
@@ -213,6 +448,103 @@ const AffectationsListScreen = () => {
     });
 
     return grouped;
+  };
+
+  // Get all unique dates for quick access
+  const getAllDates = () => {
+    if (groupBy !== 'jour') return [];
+    
+    const dates = [...new Set(affectations.map(aff => aff.date_examen))].sort();
+    return dates.map(date => {
+      const jour = affectations.find(aff => aff.date_examen === date)?.jour;
+      return {
+        date,
+        jour,
+        key: `Jour ${jour} - ${date}`,
+        count: affectations.filter(aff => aff.date_examen === date).length
+      };
+    });
+  };
+
+  // Get all unique enseignants for quick access
+  const getAllEnseignants = () => {
+    if (groupBy !== 'enseignant') return [];
+    
+    const enseignantCodes = [...new Set(affectations.map(aff => aff.code_smartex_ens))].sort();
+    return enseignantCodes.map(code => {
+      const name = getTeacherName(code);
+      return {
+        code,
+        name,
+        key: name,
+        count: affectations.filter(aff => aff.code_smartex_ens === code).length
+      };
+    });
+  };
+
+  // Get all unique salles for quick access
+  const getAllSalles = () => {
+    if (groupBy !== 'salle') return [];
+    
+    const salles = [...new Set(affectations.map(aff => aff.cod_salle || 'Sans salle'))].sort();
+    return salles.map(salle => {
+      return {
+        salle,
+        key: salle || 'Sans salle',
+        count: affectations.filter(aff => (aff.cod_salle || 'Sans salle') === salle).length
+      };
+    });
+  };
+
+  // Parse date from DD/MM/YYYY or YYYY-MM-DD format
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
+    
+    // Check if it's DD/MM/YYYY format
+    if (dateString.includes('/')) {
+      const [day, month, year] = dateString.split('/');
+      return new Date(year, month - 1, day);
+    }
+    
+    // Otherwise try YYYY-MM-DD format
+    return new Date(dateString);
+  };
+
+  // Scroll to specific section with natural smooth scrolling
+  const scrollToSection = (sectionKey) => {
+    const element = dateRefs.current[sectionKey];
+    const container = scrollContainerRef.current;
+    
+    if (element && container) {
+      const elementTop = element.offsetTop;
+      const containerTop = container.offsetTop;
+      const targetScroll = elementTop - containerTop - 100; // 100px offset from top
+      const startScroll = container.scrollTop;
+      const distance = targetScroll - startScroll;
+      
+      // Custom slow scroll animation - 2 seconds duration
+      const duration = 2000; // 2 seconds for very smooth, visible scroll
+      const startTime = performance.now();
+      
+      const animateScroll = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease in-out function for natural feel
+        const easeInOutCubic = progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        
+        const currentScroll = startScroll + (distance * easeInOutCubic);
+        container.scrollTop = currentScroll;
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        }
+      };
+      
+      requestAnimationFrame(animateScroll);
+    }
   };
 
   if (!currentSession) {
@@ -339,10 +671,121 @@ const AffectationsListScreen = () => {
             )}
           </div>
         </div>
+
+        {/* Quick Access - For Dates */}
+        {groupBy === 'jour' && getAllDates().length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Calendar size={16} className="text-blue-600" />
+                Accès rapide aux dates
+                <span className="text-gray-500 font-normal">
+                  ({getAllDates().length} date(s) disponible(s))
+                </span>
+              </label>
+            </div>
+            <div className="w-4/5 overflow-hidden">
+              <div 
+                ref={dateScrollRef}
+                className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+              >
+                {getAllDates().map((dateInfo) => {
+                  const dateObj = parseDate(dateInfo.date);
+                  const displayDate = dateObj && !isNaN(dateObj.getTime())
+                    ? dateObj.toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })
+                    : dateInfo.date;
+
+                  return (
+                    <button
+                      key={dateInfo.key}
+                      onClick={() => scrollToSection(dateInfo.key)}
+                      className="px-4 py-2 rounded-lg transition-all text-sm font-medium border-2 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:shadow-md whitespace-nowrap flex-shrink-0"
+                    >
+                      {displayDate} <span className="font-bold">({dateInfo.count})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Access - For Enseignants */}
+        {groupBy === 'enseignant' && getAllEnseignants().length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Accès rapide aux enseignants
+                <span className="text-gray-500 font-normal">
+                  ({getAllEnseignants().length} enseignant(s))
+                </span>
+              </label>
+            </div>
+            <div className="w-4/5 overflow-hidden">
+              <div 
+                ref={enseignantScrollRef}
+                className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+              >
+                {getAllEnseignants().map((ensInfo) => (
+                  <button
+                    key={ensInfo.key}
+                    onClick={() => scrollToSection(ensInfo.key)}
+                    className="px-4 py-2 rounded-lg transition-all text-sm font-medium border-2 bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:shadow-md whitespace-nowrap flex-shrink-0"
+                  >
+                    {ensInfo.name} <span className="font-bold">({ensInfo.count})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Access - For Salles */}
+        {groupBy === 'salle' && getAllSalles().length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Accès rapide aux salles
+                <span className="text-gray-500 font-normal">
+                  ({getAllSalles().length} salle(s))
+                </span>
+              </label>
+            </div>
+            <div className="w-4/5 overflow-hidden">
+              <div 
+                ref={salleScrollRef}
+                className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+              >
+                {getAllSalles().map((salleInfo) => (
+                  <button
+                    key={salleInfo.key}
+                    onClick={() => scrollToSection(salleInfo.key)}
+                    className="px-4 py-2 rounded-lg transition-all text-sm font-medium border-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300 hover:shadow-md whitespace-nowrap flex-shrink-0"
+                  >
+                    {salleInfo.salle} <span className="font-bold">({salleInfo.count})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto bg-gray-50 p-8">
+      <div 
+        ref={scrollContainerRef} 
+        className="flex-1 overflow-auto bg-gray-50 p-8"
+      >
         {loading ? (
           /* Skeleton Loading State */
           <div className="space-y-6">
@@ -449,7 +892,11 @@ const AffectationsListScreen = () => {
         ) : (
           <div className="space-y-6">
             {groupKeys.map(groupKey => (
-              <div key={groupKey} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div 
+                key={groupKey} 
+                ref={el => dateRefs.current[groupKey] = el}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+              >
                 {/* Group Header */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
@@ -461,13 +908,26 @@ const AffectationsListScreen = () => {
                 </div>
 
                 {/* Drag & Drop Instructions */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 flex items-center gap-3">
-                  <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-sm text-blue-900">
-                    <span className="font-semibold">💡 Astuce:</span> Glissez-déposez le nom d'un enseignant sur un autre pour échanger leurs affectations
-                  </p>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-3 mb-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-sm text-blue-900">
+                      <span className="font-semibold">💡 Deux méthodes pour échanger:</span>
+                    </p>
+                  </div>
+                  <div className="ml-8 space-y-1">
+                    <p className="text-sm text-blue-800">
+                      <span className="font-medium">1. Glisser-déposer:</span> Faites glisser le nom d'un enseignant sur un autre (scroll automatique près des bords)
+                    </p>
+                    <p className="text-sm text-blue-800">
+                      <span className="font-medium">2. Clic:</span> Cliquez sur "↔️ Échanger" sur deux lignes successivement
+                    </p>
+                    <p className="text-xs text-red-600 mt-2">
+                      ⚠️ Les lignes en <span className="font-semibold">rouge</span> ne peuvent pas être permutées (même enseignant, même créneau, etc.)
+                    </p>
+                  </div>
                 </div>
 
                 {/* Affectations Table */}
@@ -496,32 +956,90 @@ const AffectationsListScreen = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Enseignant Responsable
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Action
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {grouped[groupKey].map((affectation) => (
-                        <tr
-                          key={affectation.affectation_id}
-                          className={`hover:bg-gray-50 transition-colors ${selectedAffectation?.affectation_id === affectation.affectation_id
-                            ? 'bg-blue-50'
-                            : ''
-                            }`}
-                          onClick={() => setSelectedAffectation(affectation)}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            if (draggedProf && draggedProf.affectation_id !== affectation.affectation_id) {
-                              e.currentTarget.classList.add('bg-green-50', 'ring-2', 'ring-green-400');
-                            }
-                          }}
-                          onDragLeave={(e) => {
-                            e.currentTarget.classList.remove('bg-green-50', 'ring-2', 'ring-green-400');
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            e.currentTarget.classList.remove('bg-green-50', 'ring-2', 'ring-green-400');
-                            handleDrop(affectation);
-                          }}
-                        >
+                      {grouped[groupKey].map((affectation) => {
+                        const isValidDropTarget = draggedProf && canSwap(draggedProf, affectation);
+                        const isDragging = draggedProf?.affectation_id === affectation.affectation_id;
+                        const isSelected = selectedForSwap?.affectation_id === affectation.affectation_id;
+                        const isValidSwapWithSelected = selectedForSwap && canSwap(selectedForSwap, affectation);
+                        
+                        // Determine row style based on drag state
+                        let rowClassName = 'transition-all ';
+                        if (isDragging) {
+                          rowClassName += 'opacity-50 '; // Currently being dragged
+                        } else if (draggedProf && draggedProf.affectation_id !== affectation.affectation_id) {
+                          // Show color indicator when something is being dragged
+                          if (isValidDropTarget) {
+                            rowClassName += 'bg-green-50 ring-1 ring-green-300 '; // Can swap
+                          } else {
+                            rowClassName += 'bg-red-50 ring-1 ring-red-300 '; // Cannot swap
+                          }
+                        } else if (selectedForSwap && selectedForSwap.affectation_id !== affectation.affectation_id) {
+                          // Show color indicator when something is selected for click-to-swap
+                          if (isValidSwapWithSelected) {
+                            rowClassName += 'bg-green-50 ring-1 ring-green-300 '; // Can swap
+                          } else {
+                            rowClassName += 'bg-red-50 ring-1 ring-red-300 '; // Cannot swap
+                          }
+                        } else if (selectedAffectation?.affectation_id === affectation.affectation_id) {
+                          rowClassName += 'bg-blue-50 ';
+                        } else if (isSelected) {
+                          rowClassName += 'bg-yellow-100 ring-2 ring-yellow-500 '; // Selected row more visible
+                        } else {
+                          rowClassName += 'hover:bg-gray-50 ';
+                        }
+                        
+                        return (
+                          <tr
+                            key={affectation.affectation_id}
+                            className={rowClassName}
+                            onClick={() => setSelectedAffectation(affectation)}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              handleDragMove(e);
+                              // Enhance the hover effect
+                              if (draggedProf && draggedProf.affectation_id !== affectation.affectation_id) {
+                                if (isValidDropTarget) {
+                                  e.currentTarget.classList.add('ring-2', 'ring-green-500', 'shadow-lg');
+                                  e.currentTarget.classList.remove('ring-1', 'ring-green-300');
+                                } else {
+                                  e.currentTarget.classList.add('ring-2', 'ring-red-500', 'shadow-lg');
+                                  e.currentTarget.classList.remove('ring-1', 'ring-red-300');
+                                }
+                              }
+                            }}
+                            onDragLeave={(e) => {
+                              // Restore original ring style
+                              if (isValidDropTarget) {
+                                e.currentTarget.classList.remove('ring-2', 'ring-green-500', 'shadow-lg');
+                                e.currentTarget.classList.add('ring-1', 'ring-green-300');
+                              } else if (draggedProf && draggedProf.affectation_id !== affectation.affectation_id) {
+                                e.currentTarget.classList.remove('ring-2', 'ring-red-500', 'shadow-lg');
+                                e.currentTarget.classList.add('ring-1', 'ring-red-300');
+                              }
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              stopAutoScroll();
+                              // Restore original ring style
+                              e.currentTarget.classList.remove('ring-2', 'ring-green-500', 'ring-red-500', 'shadow-lg');
+                              
+                              // Always call handleDrop - it will show error if invalid
+                              handleDrop(affectation);
+                              
+                              // Restore the ring based on validity
+                              if (isValidDropTarget) {
+                                e.currentTarget.classList.add('ring-1', 'ring-green-300');
+                              } else {
+                                e.currentTarget.classList.add('ring-1', 'ring-red-300');
+                              }
+                            }}
+                          >
                           {/* Code Column */}
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm font-medium text-gray-900">
@@ -541,6 +1059,14 @@ const AffectationsListScreen = () => {
                               }}
                               onDragEnd={(e) => {
                                 e.currentTarget.classList.remove('opacity-50');
+                                stopAutoScroll();
+                                // Delay clearing draggedProf to prevent modal glitching
+                                setTimeout(() => {
+                                  // Only clear if modal isn't showing
+                                  if (!showSwapModal) {
+                                    setDraggedProf(null);
+                                  }
+                                }, 100);
                               }}
                             >
                               <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm mr-3 flex-shrink-0 bg-blue-100 text-blue-600">
@@ -582,8 +1108,25 @@ const AffectationsListScreen = () => {
                               </span>
                             </div>
                           </td>
+                          {/* Click-to-Swap Button */}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectForSwap(affectation);
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                isSelected
+                                  ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                              }`}
+                            >
+                              {isSelected ? '✓ Sélectionné' : '↔️ Échanger'}
+                            </button>
+                          </td>
                         </tr>
-                      ))}
+                      );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -594,38 +1137,44 @@ const AffectationsListScreen = () => {
       </div>
 
       {/* Swap Confirmation Modal */}
-      <SwapConfirmationModal
-        isOpen={showSwapModal}
-        onClose={cancelSwap}
-        onConfirm={confirmSwap}
-        sourceAffectation={draggedProf}
-        targetAffectation={swapTarget}
-        getTeacherName={getTeacherName}
-        loading={swapping}
-      />
+      {showSwapModal && modalSource && modalTarget && (
+        <SwapConfirmationModal
+          isOpen={showSwapModal}
+          onClose={cancelSwap}
+          onConfirm={confirmSwap}
+          sourceAffectation={modalSource}
+          targetAffectation={modalTarget}
+          getTeacherName={getTeacherName}
+          loading={swapping}
+        />
+      )}
 
       {/* Error Toast Notification */}
       {showError && (
-        <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
-          <div className="bg-white rounded-lg shadow-2xl border-l-4 border-red-500 p-4 max-w-md">
+        <div className="fixed top-4 right-4 z-[9999] animate-slide-in-right">
+          {console.log('🎨 Rendering error toast with message:', errorMessage)}
+          <div className="bg-white rounded-lg shadow-2xl border-l-4 border-red-500 p-5 max-w-lg">
             <div className="flex items-start gap-3">
               {/* Error Icon */}
               <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
                 </div>
               </div>
 
               {/* Error Content */}
               <div className="flex-1 pt-0.5">
-                <h3 className="text-sm font-bold text-gray-900 mb-1">
-                  Erreur lors de la permutation
+                <h3 className="text-base font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  🚫 Permutation impossible
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-700 leading-relaxed">
                   {errorMessage}
                 </p>
+                <div className="mt-2 text-xs text-gray-500">
+                  Veuillez vérifier les conditions d'échange
+                </div>
               </div>
 
               {/* Close Button */}
@@ -639,7 +1188,7 @@ const AffectationsListScreen = () => {
               </button>
             </div>
 
-            {/* Progress Bar */}
+            {/* Progress bar for auto-dismiss */}
             <div className="mt-3 h-1 bg-gray-200 rounded-full overflow-hidden">
               <div className="h-full bg-red-500 animate-shrink-width"></div>
             </div>
