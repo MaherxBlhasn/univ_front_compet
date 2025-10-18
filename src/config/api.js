@@ -50,6 +50,10 @@ const API_CONFIG = {
     affectations: '/api/affectations',
     affectation: (id) => `/api/affectations/${id}`,
     permuterAffectations: '/api/affectations/permuter',
+    
+    // Statistics
+    sessionStatistics: (id) => `/api/statistics/session/${id}`,
+    allSessionsStatistics: '/api/statistics/sessions',
   },
   headers: {
     'Content-Type': 'application/json',

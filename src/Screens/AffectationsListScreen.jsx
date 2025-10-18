@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '../contexts/SessionContext';
-import { fetchAffectations, permuterAffectations, fetchEnseignants } from '../services/api';
+import { fetchAffectations, permuterAffectations, fetchEnseignants, deleteAllAffectations } from '../services/api';
 import SwapConfirmationModal from '../components/Common/SwapConfirmationModal';
+import Modal from '../components/Common/Modal';
 
 const AffectationsListScreen = () => {
   const { currentSession } = useSession();
@@ -17,6 +18,8 @@ const AffectationsListScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [errorMessage, setErrorMessage] = useState(null);
   const [showError, setShowError] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (currentSession?.id_session) {
@@ -114,6 +117,38 @@ const AffectationsListScreen = () => {
     setDraggedProf(null);
   };
 
+  // Delete all affectations
+  const handleDeleteAll = async () => {
+    try {
+      setDeleting(true);
+      await deleteAllAffectations();
+      
+      // Close modal
+      setShowDeleteAllModal(false);
+      
+      // Reload affectations (will be empty)
+      await loadAffectations();
+      
+      console.log('✅ Toutes les affectations ont été supprimées');
+    } catch (error) {
+      console.error('❌ Error deleting affectations:', error);
+      
+      // Close modal first
+      setShowDeleteAllModal(false);
+      
+      // Show error notification
+      setErrorMessage(error.message || 'Erreur lors de la suppression');
+      setShowError(true);
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        setShowError(false);
+      }, 5000);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // Filter affectations by search query
   const filteredAffectations = () => {
     if (!searchQuery.trim()) return affectations;
@@ -188,8 +223,8 @@ const AffectationsListScreen = () => {
             </p>
           </div>
 
-          {/* Group By Selector */}
-          <div className="flex items-center gap-3">
+          {/* Group By Selector and Delete Button */}
+          <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-gray-700">Grouper par:</span>
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
@@ -223,6 +258,16 @@ const AffectationsListScreen = () => {
                 🏫 Salle
               </button>
             </div>
+            
+            {/* Delete All Button */}
+            {affectations.length > 0 && (
+              <button
+                onClick={() => setShowDeleteAllModal(true)}
+                className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-all border border-red-200 hover:border-red-300"
+              >
+                🗑️ Supprimer Tout
+              </button>
+            )}
           </div>
         </div>
 
@@ -534,6 +579,41 @@ const AffectationsListScreen = () => {
           </div>
         </div>
       )}
+
+      {/* Delete All Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteAllModal}
+        onClose={() => setShowDeleteAllModal(false)}
+        title="⚠️ Supprimer toutes les affectations"
+      >
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-gray-700">
+              Êtes-vous sûr de vouloir supprimer <strong>toutes les affectations</strong> ?
+            </p>
+            <p className="text-sm text-red-600 mt-2 font-semibold">
+              ⚠️ Cette action est irréversible !
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => setShowDeleteAllModal(false)}
+              className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+              disabled={deleting}
+            >
+              Annuler
+            </button>
+            <button
+              onClick={handleDeleteAll}
+              disabled={deleting}
+              className="flex-1 px-4 py-2.5 bg-red-500 text-white hover:bg-red-600 disabled:bg-red-300 rounded-lg font-medium transition-colors"
+            >
+              {deleting ? 'Suppression...' : 'Supprimer Tout'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

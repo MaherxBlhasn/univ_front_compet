@@ -434,6 +434,23 @@ export const permuterAffectations = async (affectationId1, affectationId2) => {
   return await response.json()
 }
 
+// Supprimer toutes les affectations
+export const deleteAllAffectations = async () => {
+  return await apiRequest('/api/affectations/delete-all', {
+    method: 'DELETE',
+  })
+}
+
+// ==================== STATISTICS ====================
+
+export const fetchSessionStatistics = async (id_session) => {
+  return await apiRequest(API_CONFIG.endpoints.sessionStatistics(id_session))
+}
+
+export const fetchAllSessionsStatistics = async () => {
+  return await apiRequest(API_CONFIG.endpoints.allSessionsStatistics)
+}
+
 export default {
   // Enseignants
   fetchEnseignants,
@@ -495,4 +512,9 @@ export default {
   fetchAffectations,
   updateAffectation,
   permuterAffectations,
+  deleteAllAffectations,
+  
+  // Statistics
+  fetchSessionStatistics,
+  fetchAllSessionsStatistics,
 }
