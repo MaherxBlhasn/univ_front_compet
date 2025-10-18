@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import Button from './Button'
 import { fetchGrades } from '../../services/api'
-import { GRADE_LABELS } from '../../data/mockData'
 
 const TeacherModal = ({ isOpen, onClose, onSave, teacher = null }) => {
   const [formData, setFormData] = useState({
@@ -259,7 +258,7 @@ const TeacherModal = ({ isOpen, onClose, onSave, teacher = null }) => {
                           {formData.grade_code_ens}
                         </span>
                         <span className="text-sm text-gray-700">
-                          {GRADE_LABELS[formData.grade_code_ens]}
+                          {grades.find(g => g.code_grade === formData.grade_code_ens)?.grade || formData.grade_code_ens}
                         </span>
                       </div>
                     )}
@@ -293,7 +292,7 @@ const TeacherModal = ({ isOpen, onClose, onSave, teacher = null }) => {
                               {grade.code_grade}
                             </span>
                             <span className="text-sm text-gray-600">
-                              {GRADE_LABELS[grade.code_grade] || grade.code_grade}
+                              {grade.grade}
                             </span>
                           </button>
                         ))

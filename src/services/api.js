@@ -110,10 +110,33 @@ export const fetchSessions = async () => {
   return await apiRequest(API_CONFIG.endpoints.sessions)
 }
 
+export const fetchSession = async (id_session) => {
+  return await apiRequest(API_CONFIG.endpoints.session(id_session))
+}
+
 export const createSession = async (sessionData) => {
   return await apiRequest(API_CONFIG.endpoints.sessions, {
     method: 'POST',
     body: JSON.stringify(sessionData),
+  })
+}
+
+export const updateSession = async (id_session, sessionData) => {
+  return await apiRequest(API_CONFIG.endpoints.session(id_session), {
+    method: 'PUT',
+    body: JSON.stringify(sessionData),
+  })
+}
+
+export const deleteSession = async (id_session) => {
+  return await apiRequest(API_CONFIG.endpoints.session(id_session), {
+    method: 'DELETE',
+  })
+}
+
+export const deleteAllSessions = async () => {
+  return await apiRequest(API_CONFIG.endpoints.deleteAllSessions, {
+    method: 'DELETE',
   })
 }
 
@@ -427,7 +450,11 @@ export default {
   
   // Sessions
   fetchSessions,
+  fetchSession,
   createSession,
+  updateSession,
+  deleteSession,
+  deleteAllSessions,
   checkSessionData,
   
   // Salles

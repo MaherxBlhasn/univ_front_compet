@@ -5,7 +5,6 @@ import Button from '@components/Common/Button';
 import TeacherModal from '@components/Common/TeacherModal';
 import LoadingSpinner from '@components/Common/LoadingSpinner';
 import CSVImportModal from '@components/Common/CSVImportModal';
-import { GRADE_LABELS } from '../data/mockData';
 import { getInitials } from '../utils/formatters';
 import { showNotification, exportToCSV } from '../utils/exports';
 import { notifyDataDeleted } from '../utils/events';
@@ -15,7 +14,8 @@ const TeachersScreen = () => {
     const [showModal, setShowModal] = useState(false)
     const [editingTeacher, setEditingTeacher] = useState(null)
     const [teachers, setTeachers] = useState([])
-    const [grades, setGrades] = useState({})
+    const [grades, setGrades] = useState({}) // Map of code_grade -> grade name
+    const [gradesArray, setGradesArray] = useState([]) // Array of all grades from backend
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [gradeFilter, setGradeFilter] = useState('all')
@@ -71,10 +71,14 @@ const TeachersScreen = () => {
             
             setTeachers(enseignantsData)
             
+            // Save the full grades array for rendering
+            setGradesArray(gradesData)
+            
             // Convertir le tableau de grades en objet pour un accès rapide
+            // Note: Backend returns 'grade' field, not 'libelle_grade'
             const gradesMap = {}
-            gradesData.forEach(grade => {
-                gradesMap[grade.code_grade] = grade.libelle_grade
+            gradesData.forEach(g => {
+                gradesMap[g.code_grade] = g.grade
             })
             setGrades(gradesMap)
             
@@ -310,7 +314,7 @@ const TeachersScreen = () => {
                                         {gradeFilter}
                                     </span>
                                     <span className="text-sm text-gray-700">
-                                        {GRADE_LABELS[gradeFilter]}
+                                        {grades[gradeFilter] || gradeFilter}
                                     </span>
                                 </div>
                             )}
@@ -329,29 +333,29 @@ const TeachersScreen = () => {
                                 >
                                     Tous les grades
                                 </button>
-                                {Object.keys(grades).length === 0 ? (
+                                {gradesArray.length === 0 ? (
                                     <div className="px-4 py-2 text-sm text-gray-500">Chargement...</div>
                                 ) : (
-                                    Object.keys(grades).sort().map((code) => (
+                                    gradesArray.sort((a, b) => a.code_grade.localeCompare(b.code_grade)).map((gradeObj) => (
                                         <button
-                                            key={code}
+                                            key={gradeObj.code_grade}
                                             onClick={() => {
-                                                setGradeFilter(code)
+                                                setGradeFilter(gradeObj.code_grade)
                                                 setShowGradeDropdown(false)
                                             }}
                                             className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors flex items-center gap-2"
                                         >
                                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                                                getGradeColor(code).bg
+                                                getGradeColor(gradeObj.code_grade).bg
                                             } ${
-                                                getGradeColor(code).text
+                                                getGradeColor(gradeObj.code_grade).text
                                             } ${
-                                                getGradeColor(code).border
+                                                getGradeColor(gradeObj.code_grade).border
                                             }`}>
-                                                {code}
+                                                {gradeObj.code_grade}
                                             </span>
                                             <span className="text-sm text-gray-600">
-                                                {GRADE_LABELS[code] || code}
+                                                {gradeObj.grade}
                                             </span>
                                         </button>
                                     ))
@@ -410,7 +414,7 @@ const TeachersScreen = () => {
 
             {/* Content */}
             <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-                {/* Legend for Grade Colors - Compact Version with Names */}
+                {/* Legend for Grade Colors - Dynamic from Backend */}
                 <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 p-2.5 mb-4 shadow-sm">
                     <div className="flex items-start gap-2">
                         <div className="flex items-center gap-1.5 mt-0.5">
@@ -418,42 +422,27 @@ const TeachersScreen = () => {
                             <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">Légende:</span>
                         </div>
                         <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap">
-                            <div className="flex items-center gap-1">
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-purple-100 text-purple-700 border-purple-300">PR</span>
-                                <span className="text-xs text-gray-600">Professeur</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-indigo-100 text-indigo-700 border-indigo-300">PES</span>
-                                <span className="text-xs text-gray-600">Prof. Ens. Sup.</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-blue-100 text-blue-700 border-blue-300">MC</span>
-                                <span className="text-xs text-gray-600">Maître Conf.</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-cyan-100 text-cyan-700 border-cyan-300">MA</span>
-                                <span className="text-xs text-gray-600">Maître Asst.</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-teal-100 text-teal-700 border-teal-300">PTC</span>
-                                <span className="text-xs text-gray-600">Prof. Techno.</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-green-100 text-green-700 border-green-300">AS</span>
-                                <span className="text-xs text-gray-600">Assistant</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-700 border-yellow-300">AC</span>
-                                <span className="text-xs text-gray-600">Asst. Contract.</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-orange-100 text-orange-700 border-orange-300">VA</span>
-                                <span className="text-xs text-gray-600">Vacataire</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="px-2 py-0.5 rounded-full text-xs font-medium border bg-red-100 text-red-700 border-red-300">EX</span>
-                                <span className="text-xs text-gray-600">Expert</span>
-                            </div>
+                            {gradesArray.length > 0 ? (
+                                gradesArray.map((gradeObj) => {
+                                    const colors = getGradeColor(gradeObj.code_grade);
+                                    // Abbreviate long names
+                                    const displayName = gradeObj.grade.length > 25 
+                                        ? gradeObj.grade.substring(0, 22) + '...' 
+                                        : gradeObj.grade;
+                                    return (
+                                        <div key={gradeObj.code_grade} className="flex items-center gap-1">
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${colors.bg} ${colors.text} ${colors.border}`}>
+                                                {gradeObj.code_grade}
+                                            </span>
+                                            <span className="text-xs text-gray-600" title={gradeObj.grade}>
+                                                {displayName}
+                                            </span>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <span className="text-xs text-gray-500">Chargement des grades...</span>
+                            )}
                         </div>
                     </div>
                 </div>

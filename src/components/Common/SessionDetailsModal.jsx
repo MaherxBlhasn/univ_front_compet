@@ -1,4 +1,4 @@
-import { X, Calendar, Users, Clock, MapPin, FileText } from 'lucide-react'
+import { X, Calendar, Clock, FileText } from 'lucide-react'
 import Button from './Button'
 
 const SessionDetailsModal = ({ isOpen, onClose, session }) => {
@@ -26,7 +26,7 @@ const SessionDetailsModal = ({ isOpen, onClose, session }) => {
                 <Calendar className="text-blue-600" size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900">{session.name}</h3>
+                <h3 className="text-xl font-bold text-gray-900">{session.libelle_session}</h3>
                 <p className="text-sm text-gray-600">Détails de la session</p>
               </div>
             </div>
@@ -40,109 +40,71 @@ const SessionDetailsModal = ({ isOpen, onClose, session }) => {
 
           {/* Content */}
           <div className="p-6 space-y-6">
-            {/* Status */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-600">Statut:</span>
-              <span className={`px-4 py-2 rounded-full text-sm font-medium border-2 ${getStatusColor(session.status)}`}>
-                {session.status}
-              </span>
-            </div>
-
             {/* Dates */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar size={18} className="text-blue-600" />
-                  <span className="text-sm font-medium text-gray-600">Date de début</span>
+              {session.date_debut && (
+                <div className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar size={18} className="text-blue-600" />
+                    <span className="text-sm font-medium text-gray-600">Date de début</span>
+                  </div>
+                  <p className="text-lg font-bold text-gray-900">
+                    {new Date(session.date_debut).toLocaleDateString('fr-FR', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
                 </div>
-                <p className="text-lg font-bold text-gray-900">
-                  {new Date(session.dateDebut).toLocaleDateString('fr-FR', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
+              )}
 
-              <div className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-colors">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar size={18} className="text-purple-600" />
-                  <span className="text-sm font-medium text-gray-600">Date de fin</span>
+              {session.date_fin && (
+                <div className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-colors">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar size={18} className="text-purple-600" />
+                    <span className="text-sm font-medium text-gray-600">Date de fin</span>
+                  </div>
+                  <p className="text-lg font-bold text-gray-900">
+                    {new Date(session.date_fin).toLocaleDateString('fr-FR', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
                 </div>
-                <p className="text-lg font-bold text-gray-900">
-                  {new Date(session.dateFin).toLocaleDateString('fr-FR', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
+              )}
             </div>
 
             {/* Durée */}
-            <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock size={18} className="text-blue-600" />
-                <span className="text-sm font-medium text-blue-900">Durée de la session</span>
-              </div>
-              <p className="text-2xl font-bold text-blue-700">
-                {Math.ceil((new Date(session.dateFin) - new Date(session.dateDebut)) / (1000 * 60 * 60 * 24))} jours
-              </p>
-            </div>
-
-            {/* Niveaux */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Users size={18} className="text-purple-600" />
-                <span className="text-sm font-medium text-gray-700">Niveaux concernés</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {session.niveaux.map((niveau) => (
-                  <span 
-                    key={niveau} 
-                    className="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg font-medium border-2 border-purple-300 hover:bg-purple-200 transition-colors"
-                  >
-                    {niveau}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Statistiques */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-green-50 rounded-lg border-2 border-green-200 text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <FileText size={18} className="text-green-600" />
-                  <span className="text-sm font-medium text-green-900">Examens</span>
+            {session.date_debut && session.date_fin && (
+              <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock size={18} className="text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">Durée de la session</span>
                 </div>
-                <p className="text-3xl font-bold text-green-700">{session.nbExamens}</p>
-                <p className="text-xs text-green-600 mt-1">examens planifiés</p>
+                <p className="text-2xl font-bold text-blue-700">
+                  {Math.ceil((new Date(session.date_fin) - new Date(session.date_debut)) / (1000 * 60 * 60 * 24))} jours
+                </p>
               </div>
+            )}
 
-              <div className="p-4 bg-orange-50 rounded-lg border-2 border-orange-200 text-center">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <MapPin size={18} className="text-orange-600" />
-                  <span className="text-sm font-medium text-orange-900">Salles</span>
+            {/* Additional Info */}
+            {(session.AU || session.Semestre || session.type_session) && (
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <FileText size={16} className="text-blue-600" />
+                  Informations de la session
+                </h4>
+                <div className="space-y-2 text-sm text-gray-700">
+                  {session.AU && <p><strong>Année universitaire:</strong> {session.AU}</p>}
+                  {session.Semestre && <p><strong>Semestre:</strong> {session.Semestre}</p>}
+                  {session.type_session && <p><strong>Type de session:</strong> {session.type_session}</p>}
+                  <p><strong>ID:</strong> #{session.id_session}</p>
                 </div>
-                <p className="text-3xl font-bold text-orange-700">{session.nbSalles}</p>
-                <p className="text-xs text-orange-600 mt-1">salles utilisées</p>
               </div>
-            </div>
-
-            {/* Informations supplémentaires */}
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <FileText size={16} className="text-blue-600" />
-                Informations supplémentaires
-              </h4>
-              <div className="space-y-2 text-sm text-gray-700">
-                <p><strong>ID:</strong> #{session.id}</p>
-                <p><strong>Créée le:</strong> {new Date().toLocaleDateString('fr-FR')}</p>
-                <p><strong>Dernière modification:</strong> {new Date().toLocaleDateString('fr-FR')}</p>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Footer */}

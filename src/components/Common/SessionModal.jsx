@@ -1,31 +1,45 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Calendar } from 'lucide-react'
 import Button from './Button'
 
 const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
-  const [formData, setFormData] = useState(session || {
-    name: '',
-    dateDebut: '',
-    dateFin: '',
-    niveaux: [],
-    status: 'Planifiée'
+  const [formData, setFormData] = useState({
+    libelle_session: '',
+    date_debut: '',
+    date_fin: '',
+    AU: '',
+    Semestre: '',
+    type_session: ''
   })
 
-  const niveauxOptions = ['L1', 'L2', 'L3', 'M1', 'M2']
+  // Update form data when session changes
+  useEffect(() => {
+    if (session) {
+      setFormData({
+        libelle_session: session.libelle_session || '',
+        date_debut: session.date_debut || '',
+        date_fin: session.date_fin || '',
+        AU: session.AU || '',
+        Semestre: session.Semestre || '',
+        type_session: session.type_session || ''
+      })
+    } else {
+      // Reset form for new session
+      setFormData({
+        libelle_session: '',
+        date_debut: '',
+        date_fin: '',
+        AU: '',
+        Semestre: '',
+        type_session: ''
+      })
+    }
+  }, [session, isOpen])
 
   const handleSubmit = (e) => {
     e.preventDefault()
     onSave(formData)
     onClose()
-  }
-
-  const toggleNiveau = (niveau) => {
-    setFormData(prev => ({
-      ...prev,
-      niveaux: prev.niveaux.includes(niveau)
-        ? prev.niveaux.filter(n => n !== niveau)
-        : [...prev.niveaux, niveau]
-    }))
   }
 
   if (!isOpen) return null
@@ -62,8 +76,8 @@ const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
                 <input
                   type="text"
                   required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  value={formData.libelle_session}
+                  onChange={(e) => setFormData({ ...formData, libelle_session: e.target.value })}
                   placeholder="Ex: Session Janvier 2025"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -78,8 +92,8 @@ const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
                   <input
                     type="date"
                     required
-                    value={formData.dateDebut}
-                    onChange={(e) => setFormData({ ...formData, dateDebut: e.target.value })}
+                    value={formData.date_debut}
+                    onChange={(e) => setFormData({ ...formData, date_debut: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -90,50 +104,70 @@ const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
                   <input
                     type="date"
                     required
-                    value={formData.dateFin}
-                    onChange={(e) => setFormData({ ...formData, dateFin: e.target.value })}
+                    value={formData.date_fin}
+                    onChange={(e) => setFormData({ ...formData, date_fin: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
-              {/* Niveaux */}
+              {/* Année Universitaire */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Niveaux concernés *
+                  Année universitaire
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {niveauxOptions.map((niveau) => (
-                    <button
-                      key={niveau}
-                      type="button"
-                      onClick={() => toggleNiveau(niveau)}
-                      className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                        formData.niveaux.includes(niveau)
-                          ? 'bg-purple-100 border-purple-500 text-purple-700 font-medium'
-                          : 'border-gray-300 text-gray-700 hover:border-gray-400'
-                      }`}
-                    >
-                      {niveau}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  type="text"
+                  value={formData.AU || ''}
+                  onChange={(e) => setFormData({ ...formData, AU: e.target.value })}
+                  placeholder="Ex: 2024-2025"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
 
-              {/* Statut */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Statut
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="Planifiée">Planifiée</option>
-                  <option value="En cours">En cours</option>
-                  <option value="Terminée">Terminée</option>
-                </select>
+              {/* Semestre et Type */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Semestre
+                  </label>
+                  <div className="flex gap-4 items-center h-[42px]">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="semestre"
+                        value="1"
+                        checked={formData.Semestre === '1'}
+                        onChange={(e) => setFormData({ ...formData, Semestre: e.target.value })}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Semestre 1</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="semestre"
+                        value="2"
+                        checked={formData.Semestre === '2'}
+                        onChange={(e) => setFormData({ ...formData, Semestre: e.target.value })}
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">Semestre 2</span>
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type de session
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.type_session || ''}
+                    onChange={(e) => setFormData({ ...formData, type_session: e.target.value })}
+                    placeholder="Ex: Normale, Rattrapage"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </div>
 

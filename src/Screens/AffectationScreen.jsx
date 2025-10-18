@@ -570,7 +570,12 @@ const AffectationScreen = () => {
                                 </h4>
                                 <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
                                   {optimizationResult.infeasibility_diagnostic.reasons.map((reason, idx) => (
-                                    <li key={idx}>{reason}</li>
+                                    <li key={idx}>
+                                      {typeof reason === 'string' 
+                                        ? reason 
+                                        : reason.message || reason.description || JSON.stringify(reason)
+                                      }
+                                    </li>
                                   ))}
                                 </ul>
                               </div>
@@ -617,7 +622,12 @@ const AffectationScreen = () => {
                                 </h4>
                                 <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
                                   {optimizationResult.infeasibility_diagnostic.suggestions.map((suggestion, idx) => (
-                                    <li key={idx}>{suggestion}</li>
+                                    <li key={idx}>
+                                      {typeof suggestion === 'string' 
+                                        ? suggestion 
+                                        : suggestion.description || suggestion.message || JSON.stringify(suggestion)
+                                      }
+                                    </li>
                                   ))}
                                 </ul>
                               </div>

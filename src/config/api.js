@@ -11,10 +11,12 @@ const API_CONFIG = {
     // Grades
     grades: '/api/grades',
     gradeQuotas: '/api/grades/quotas',
-    updateGradeQuota: (code) => `/api/grades/${code}/quota`,
+    updateGradeQuota: (code) => `/api/grades/${code}`,
     
     // Sessions
     sessions: '/api/sessions',
+    session: (id) => `/api/sessions/${id}`,
+    deleteAllSessions: '/api/sessions/all',
     checkSessionData: (id) => `/api/sessions/${id}/check-data`,
     
     // Salles

@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Save, GraduationCap } from 'lucide-react'
+import { Save, GraduationCap, CheckCircle, XCircle } from 'lucide-react'
 import Header from '@components/Layout/Header'
-import Button from '@components/Common/Button'
 import Card from '@components/Common/Card'
 import LoadingSpinner from '@components/Common/LoadingSpinner'
-import { GRADE_LABELS } from '../data/mockData'
 import { fetchGrades, updateGradeQuota } from '../services/api'
 
 const SettingsScreen = () => {
   const [gradeQuotas, setGradeQuotas] = useState({})
+  const [originalQuotas, setOriginalQuotas] = useState({}) // Track original values from backend
+  const [gradesArray, setGradesArray] = useState([]) // Array of grades from backend
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [savingGrades, setSavingGrades] = useState({}) // Track which grade is currently saving
+  const [saveStatus, setSaveStatus] = useState({}) // Track save status per grade: { code_grade: 'success' | 'error' | null }
 
   // Charger les grades et leurs quotas depuis l'API
   useEffect(() => {
@@ -22,6 +23,9 @@ const SettingsScreen = () => {
       setLoading(true)
       const grades = await fetchGrades()
       
+      // Save the grades array for rendering
+      setGradesArray(grades)
+      
       // Créer un objet avec les quotas pour chaque grade
       const quotasMap = {}
       grades.forEach(grade => {
@@ -29,13 +33,12 @@ const SettingsScreen = () => {
       })
       
       setGradeQuotas(quotasMap)
+      setOriginalQuotas(quotasMap) // Save original values
     } catch (error) {
       console.error('Error loading grades:', error)
-      // En cas d'erreur, utiliser les valeurs par défaut
-      setGradeQuotas({
-        'PR': 0, 'MA': 0, 'PTC': 0, 'AC': 0, 'VA': 0,
-        'AS': 0, 'EX': 0, 'PES': 0, 'MC': 0, 'V': 0
-      })
+      setGradeQuotas({})
+      setOriginalQuotas({})
+      setGradesArray([])
     } finally {
       setLoading(false)
     }
@@ -62,24 +65,42 @@ const SettingsScreen = () => {
       ...prev,
       [gradeCode]: parseInt(value) || 0
     }))
+    // Clear any previous status when user changes value
+    setSaveStatus(prev => ({ ...prev, [gradeCode]: null }))
   }
 
-  const handleSave = async () => {
+  // Check if a grade has been modified
+  const isModified = (gradeCode) => {
+    return gradeQuotas[gradeCode] !== originalQuotas[gradeCode]
+  }
+
+  // Save individual grade quota
+  const handleSaveGrade = async (gradeCode) => {
     try {
-      setSaving(true)
+      setSavingGrades(prev => ({ ...prev, [gradeCode]: true }))
+      setSaveStatus(prev => ({ ...prev, [gradeCode]: null }))
       
-      // Sauvegarder chaque quota individuellement
-      const savePromises = Object.entries(gradeQuotas).map(([code, quota]) => 
-        updateGradeQuota(code, quota)
-      )
+      await updateGradeQuota(gradeCode, gradeQuotas[gradeCode])
       
-      await Promise.all(savePromises)
+      // Update original value after successful save
+      setOriginalQuotas(prev => ({ ...prev, [gradeCode]: gradeQuotas[gradeCode] }))
+      setSaveStatus(prev => ({ ...prev, [gradeCode]: 'success' }))
       
-      console.log('✅ Quotas de grades sauvegardés avec succès!')
+      // Clear success indicator after 2 seconds
+      setTimeout(() => {
+        setSaveStatus(prev => ({ ...prev, [gradeCode]: null }))
+      }, 2000)
+      
     } catch (error) {
-      console.error('❌ Erreur lors de la sauvegarde des quotas:', error)
+      console.error(`❌ Erreur lors de la sauvegarde du grade ${gradeCode}:`, error)
+      setSaveStatus(prev => ({ ...prev, [gradeCode]: 'error' }))
+      
+      // Clear error indicator after 3 seconds
+      setTimeout(() => {
+        setSaveStatus(prev => ({ ...prev, [gradeCode]: null }))
+      }, 3000)
     } finally {
-      setSaving(false)
+      setSavingGrades(prev => ({ ...prev, [gradeCode]: false }))
     }
   }
 
@@ -96,94 +117,120 @@ const SettingsScreen = () => {
       <Header
         title="Gestion des Grades"
         subtitle="Configurez les quotas d'enseignants par grade"
-        actions={
-          <Button 
-            variant="primary" 
-            icon={Save} 
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </Button>
-        }
       />
 
-      <main className="flex-1 overflow-y-auto p-6">
-        <Card title="Gestion des Quotas de Grades" className="border-t-4 border-t-orange-500 shadow-lg">
-          <div className="space-y-6">
-              {/* Description */}
-              <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border-l-4 border-orange-500">
-                <div className="p-2 bg-white rounded-lg shadow-sm">
-                  <GraduationCap size={24} className="text-orange-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900">Définissez le nombre maximum d'enseignants par grade</h3>
-                  <p className="text-xs text-gray-600 mt-0.5">Configurez les quotas pour optimiser la répartition des enseignants</p>
-                </div>
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <div className="w-full">
+          <Card className="shadow-lg">
+            {/* Header Section */}
+            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+              <div className="p-2 bg-white rounded-lg shadow-sm">
+                <GraduationCap size={20} className="text-orange-600" />
               </div>
-              
-              {/* Grid de grades - prend tout l'espace disponible */}
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 content-start">
-                {Object.entries(GRADE_LABELS).map(([code, name]) => (
-                  <div 
-                    key={code} 
-                    className="group relative bg-white p-5 border-2 border-gray-200 rounded-xl hover:border-orange-300 hover:shadow-md transition-all duration-200 flex flex-col"
-                  >
-                    {/* Badge en haut */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className={`px-3 py-1.5 rounded-full text-sm font-bold border-2 ${
-                        getGradeColor(code).bg
-                      } ${
-                        getGradeColor(code).text
-                      } ${
-                        getGradeColor(code).border
-                      } group-hover:scale-110 transition-transform duration-200`}>
-                        {code}
-                      </span>
-                    </div>
-                    
-                    {/* Nom du grade */}
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
-                      {name}
-                    </label>
-                    
-                    {/* Input */}
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="0"
-                        value={gradeQuotas[code]}
-                        onChange={(e) => handleQuotaChange(code, e.target.value)}
-                        className="w-full px-4 py-2.5 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200"
-                        placeholder="0"
-                      />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium pointer-events-none">
-                        max
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Total - sticky en bas */}
-              <div className="mt-auto pt-6 border-t-2 border-gray-200">
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50 rounded-xl border-2 border-orange-200">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                      <GraduationCap size={20} className="text-orange-600" />
-                    </div>
-                    <span className="text-base font-bold text-gray-800">Quota total :</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-3xl font-bold text-orange-600">
-                      {Object.values(gradeQuotas).reduce((sum, quota) => sum + quota, 0)}
-                    </span>
-                    <span className="text-sm text-gray-600 font-medium">enseignants</span>
-                  </div>
-                </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Quotas des grades d'enseignants</h3>
+                <p className="text-xs text-gray-600">Nombre maximum par grade</p>
               </div>
             </div>
-        </Card>
+
+            {/* Compact Table Layout */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Grade
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Libellé
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Quota Maximum
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {gradesArray.map((gradeObj, index) => {
+                    const colors = getGradeColor(gradeObj.code_grade)
+                    return (
+                      <tr 
+                        key={gradeObj.code_grade}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        {/* Grade Badge */}
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${colors.bg} ${colors.text} ${colors.border}`}>
+                            {gradeObj.code_grade}
+                          </span>
+                        </td>
+                        
+                        {/* Grade Name */}
+                        <td className="px-4 py-3">
+                          <span className="text-sm font-medium text-gray-900">
+                            {gradeObj.grade}
+                          </span>
+                        </td>
+                        
+                        {/* Quota Input */}
+                        <td className="px-4 py-3">
+                          <div className="flex justify-center items-center gap-2">
+                            <input
+                              type="number"
+                              min="0"
+                              value={gradeQuotas[gradeObj.code_grade] || 0}
+                              onChange={(e) => handleQuotaChange(gradeObj.code_grade, e.target.value)}
+                              className="w-20 px-3 py-1.5 text-center text-sm font-semibold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                            />
+                            
+                            {/* Save Button - Shows when modified */}
+                            {isModified(gradeObj.code_grade) && saveStatus[gradeObj.code_grade] !== 'success' && (
+                              <button
+                                onClick={() => handleSaveGrade(gradeObj.code_grade)}
+                                disabled={savingGrades[gradeObj.code_grade]}
+                                className="p-1.5 hover:bg-orange-100 rounded-lg transition-colors disabled:opacity-50"
+                                title="Enregistrer ce quota"
+                              >
+                                <Save size={16} className="text-orange-600" />
+                              </button>
+                            )}
+                            
+                            {/* Status Indicators */}
+                            {saveStatus[gradeObj.code_grade] === 'success' && (
+                              <CheckCircle size={18} className="text-green-500 animate-pulse" />
+                            )}
+                            {saveStatus[gradeObj.code_grade] === 'error' && (
+                              <XCircle size={18} className="text-red-500 animate-pulse" />
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+                
+                {/* Total Footer */}
+                <tfoot>
+                  <tr className="bg-gradient-to-r from-orange-50 to-amber-50 border-t-2 border-orange-200">
+                    <td colSpan="2" className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap size={18} className="text-orange-600" />
+                        <span className="text-sm font-bold text-gray-900">Total des quotas</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-2xl font-bold text-orange-600">
+                          {Object.values(gradeQuotas).reduce((sum, quota) => sum + quota, 0)}
+                        </span>
+                        <span className="text-xs text-gray-600 font-medium">max</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </Card>
+        </div>
       </main>
     </div>
   )
