@@ -10,6 +10,7 @@ import PlanningScreen from '../../Screens/PlanningScreen'
 import VoeuxScreen from '../../Screens/VoeuxScreen'
 import AffectationScreen from '../../Screens/AffectationScreen'
 import AffectationsListScreen from '../../Screens/AffectationsListScreen'
+import TelechargementScreen from '../../Screens/TelechargementScreen'
 import QuotaDispersionScreen from '../../Screens/QuotaDispersionScreen'
 import SettingsScreen from '../../Screens/SettingsScreen'
 
@@ -50,6 +51,7 @@ const AppContent = () => {
         <Route path="/voeux" element={<VoeuxScreen />} />
         <Route path="/affectation" element={<AffectationScreen />} />
         <Route path="/affectations" element={<AffectationsListScreen />} />
+        <Route path="/telechargement" element={<TelechargementScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
       </Routes>
     </div>

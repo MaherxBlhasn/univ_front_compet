@@ -30,8 +30,9 @@ const Sidebar = () => {
       icon: UserCheck,
       path: '/affectation',
       subItems: [
-        { id: 'affectation-generation', label: 'Lancer l’optimisation', path: '/affectation' },
-        { id: 'affectations-list', label: 'Affectations', path: '/affectations' }
+        { id: 'affectation-generation', label: "Lancer l'optimisation", path: '/affectation' },
+        { id: 'affectations-list', label: 'Affectations', path: '/affectations' },
+        { id: 'telechargement', label: 'Téléchargement', path: '/telechargement' }
       ]
     },
     { id: 'storage', label: 'Consommation mémoire', icon: HardDrive, path: '/storage' },
@@ -117,7 +118,7 @@ const Sidebar = () => {
             {item.subItems && (
               <div className="ml-3 pl-3 border-l-2 border-gray-200 space-y-0.5">
                 {item.subItems.map((subItem) => {
-                  const isDisabled = (subItem.id === 'affectations-list' || subItem.id === 'quota-dispersion') && affectationStatus?.status !== 'yes';
+                  const isDisabled = (subItem.id === 'affectations-list' || subItem.id === 'quota-dispersion' || subItem.id === 'telechargement') && affectationStatus?.status !== 'yes';
 
                   if (isDisabled) {
                     return (
