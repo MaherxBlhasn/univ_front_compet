@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar, Users, Clock, TrendingUp, Award,
-  CheckCircle, AlertTriangle, Target, Activity
+  CheckCircle, AlertTriangle, Target, Activity, RefreshCw
 } from 'lucide-react';
 import Header from '@components/Layout/Header';
 import Card from '@components/Common/Card';
@@ -74,6 +74,15 @@ const Dashboard = () => {
       <Header
         title="Tableau de bord"
         subtitle={`${currentSession.libelle_session} - ${currentSession.AU}`}
+        actions={
+          <Button
+            variant="outline"
+            icon={RefreshCw}
+            onClick={loadStatistics}
+          >
+            Actualiser
+          </Button>
+        }
       />
 
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
@@ -178,12 +187,12 @@ const Dashboard = () => {
                 details={`${optStats.couverture_creneaux.salles_bien_couvertes}/${optStats.couverture_creneaux.total_salles} salles`}
               />
               <CircularGauge
-                label="Présence Responsables"
-                value={optStats.responsables_salles.taux_presence_jour}
+                label="Dispersion des Surveillances"
+                value={(optStats.dispersion.seances_consecutives / (optStats.dispersion.seances_consecutives + optStats.dispersion.seances_espacees)) * 100}
                 max={100}
                 color="orange"
-                icon={Users}
-                details={`${optStats.responsables_salles.responsables_presents_jour}/${optStats.responsables_salles.total_responsabilites} présents`}
+                icon={Activity}
+                details={`${optStats.dispersion.seances_consecutives} Consécutives · ${optStats.dispersion.seances_espacees} Espacées`}
               />
             </div>
 
@@ -218,32 +227,42 @@ const Dashboard = () => {
               </Card>
 
               {/* Dispersion Data - NEW! */}
-              <Card title="🔀 Dispersion des Surveillances" className="shadow-lg hover:shadow-xl transition-shadow">
+              <Card title="👥 Présence Responsables" className="shadow-lg hover:shadow-xl transition-shadow">
                 <div className="space-y-4">
-                  <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Plusieurs séances/jour</span>
-                      <Activity size={20} className="text-purple-600" />
+                  {/* Circular Gauge for Presence */}
+                  <div className="flex justify-center">
+                    <div className="relative w-40 h-40">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle
+                          cx="80"
+                          cy="80"
+                          r="70"
+                          stroke="#fee2e2"
+                          strokeWidth="12"
+                          fill="none"
+                        />
+                        <circle
+                          cx="80"
+                          cy="80"
+                          r="70"
+                          stroke="#f97316"
+                          strokeWidth="12"
+                          fill="none"
+                          strokeDasharray={`${(optStats.responsables_salles.taux_presence_jour / 100) * 439.6} 439.6`}
+                          className="transition-all duration-1000"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <Users size={24} className="text-orange-500 mb-1" />
+                        <span className="text-3xl font-bold text-orange-600">
+                          {optStats.responsables_salles.taux_surveillants_responsable_present}
+                        </span>
+                        <span className="text-sm text-gray-500">%</span>
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-purple-600">
-                      {optStats.dispersion.enseignants_plusieurs_seances_par_jour}
-                    </div>
-                    <div className="text-xs text-gray-600 mt-1">enseignants concernés</div>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-200 text-center">
-                      <div className="text-xl font-bold text-green-600">
-                        {optStats.dispersion.seances_consecutives}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">Consécutives</div>
-                    </div>
-                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-200 text-center">
-                      <div className="text-xl font-bold text-orange-600">
-                        {optStats.dispersion.seances_espacees}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1">Espacées</div>
-                    </div>
+                  <div className="text-center text-sm text-gray-600">
+                    {optStats.responsables_salles.total_enseignants_surveillants - optStats.responsables_salles.responsables_absents_count}/{optStats.responsables_salles.total_enseignants_surveillants} présents
                   </div>
                 </div>
               </Card>
@@ -291,11 +310,10 @@ const Dashboard = () => {
                         <span className="text-lg font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                           {code}
                         </span>
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${
-                          optGrade?.equitable 
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
-                            : 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
-                        }`}>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${optGrade?.equitable
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                          : 'bg-gradient-to-r from-orange-500 to-red-500 text-white'
+                          }`}>
                           {optGrade?.equitable ? '✓ OK' : `⚠ ${optGrade?.ecart || 0}`}
                         </span>
                       </div>
@@ -343,7 +361,7 @@ const Dashboard = () => {
                 Vous devez générer les affectations pour voir les statistiques d'optimisation
               </p>
             </div>
-            
+
             <div className="bg-blue-50 rounded-xl p-6 mb-6 border border-blue-200">
               <h4 className="font-semibold text-gray-900 mb-2">📋 Étapes à suivre :</h4>
               <ol className="text-left text-gray-700 space-y-2 max-w-md mx-auto">
@@ -362,8 +380,8 @@ const Dashboard = () => {
               </ol>
             </div>
 
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               size="lg"
               icon={Target}
               onClick={() => navigate('/affectation')}
@@ -383,43 +401,43 @@ const CircularGauge = ({ label, value, max, color, icon: Icon, details }) => {
   const percentage = Math.min((value / max) * 100, 100);
   const circumference = 2 * Math.PI * 50;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
-  
+
   const colorClasses = {
-    blue: { 
-      stroke: 'stroke-blue-500', 
-      text: 'text-blue-600', 
+    blue: {
+      stroke: 'stroke-blue-500',
+      text: 'text-blue-600',
       bg: 'bg-gradient-to-br from-blue-500 to-blue-600',
       lightBg: 'bg-blue-50'
     },
-    green: { 
-      stroke: 'stroke-green-500', 
-      text: 'text-green-600', 
+    green: {
+      stroke: 'stroke-green-500',
+      text: 'text-green-600',
       bg: 'bg-gradient-to-br from-green-500 to-emerald-600',
       lightBg: 'bg-green-50'
     },
-    purple: { 
-      stroke: 'stroke-purple-500', 
-      text: 'text-purple-600', 
+    purple: {
+      stroke: 'stroke-purple-500',
+      text: 'text-purple-600',
       bg: 'bg-gradient-to-br from-purple-500 to-indigo-600',
       lightBg: 'bg-purple-50'
     },
-    orange: { 
-      stroke: 'stroke-orange-500', 
-      text: 'text-orange-600', 
+    orange: {
+      stroke: 'stroke-orange-500',
+      text: 'text-orange-600',
       bg: 'bg-gradient-to-br from-orange-500 to-red-600',
       lightBg: 'bg-orange-50'
     },
   };
-  
+
   const colors = colorClasses[color] || colorClasses.blue;
-  
+
   return (
     <Card className="text-center shadow-lg hover:shadow-xl transition-shadow">
       <div className="flex flex-col items-center justify-center p-5">
         <div className={`w-14 h-14 ${colors.bg} rounded-full flex items-center justify-center mb-4 shadow-lg`}>
           <Icon size={28} className="text-white" />
         </div>
-        
+
         <div className="relative w-44 h-44 mb-4">
           <svg className="w-full h-full transform -rotate-90">
             <circle
@@ -454,7 +472,7 @@ const CircularGauge = ({ label, value, max, color, icon: Icon, details }) => {
             </div>
           </div>
         </div>
-        
+
         <h3 className="text-sm font-bold text-gray-900 mb-2 px-3 w-full break-words">{label}</h3>
         <p className="text-xs text-gray-600 px-3 w-full break-words leading-relaxed">{details}</p>
       </div>
@@ -470,7 +488,7 @@ const StatCard = ({ icon: Icon, label, value, subtitle, color }) => {
     purple: 'from-purple-500 to-purple-600',
     orange: 'from-orange-500 to-orange-600',
   };
-  
+
   return (
     <Card className={`bg-gradient-to-br ${colorClasses[color]} text-white shadow-lg`}>
       <div className="p-6">
@@ -488,14 +506,14 @@ const StatCard = ({ icon: Icon, label, value, subtitle, color }) => {
 // Linear Progress Bar Component
 const LinearProgressBar = ({ label, current, total, color }) => {
   const percentage = Math.min((current / total) * 100, 100);
-  
+
   const colorClasses = {
     blue: 'bg-blue-500',
     green: 'bg-green-500',
     purple: 'bg-purple-500',
     orange: 'bg-orange-500',
   };
-  
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">

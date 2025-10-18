@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, Download, Plus, Edit2, Trash2, Users, MapPin, Trash, Upload } from 'lucide-react'
+import { Calendar, Clock, Download, Plus, Edit2, Trash2, Users, MapPin, Trash, Upload, RefreshCw } from 'lucide-react'
 import Header from '@components/Layout/Header'
 import Button from '@components/Common/Button'
 import LoadingSpinner from '@components/Common/LoadingSpinner'
@@ -397,6 +397,16 @@ const PlanningScreen = () => {
         subtitle={currentSession ? `${currentSession.libelle_session} - ${filteredCreneaux.length} créneau(x)` : "Gérez les créneaux d'examens"}
         actions={
           <>
+            <Button
+              variant="outline"
+              icon={RefreshCw}
+              onClick={() => {
+                loadCreneaux()
+                loadStats()
+              }}
+            >
+              Actualiser
+            </Button>
             <Button
               variant="outline"
               icon={Upload}

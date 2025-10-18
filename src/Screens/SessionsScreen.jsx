@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Calendar, Edit, Trash2, Eye, Download } from 'lucide-react';
+import { Plus, Search, Calendar, Edit, Trash2, Eye, Download, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useSession } from '../contexts/SessionContext';
 import Header from '@components/Layout/Header';
 import Button from '@components/Common/Button';
 import Card from '@components/Common/Card';
@@ -12,6 +14,8 @@ import { exportToCSV, showNotification } from '../utils/exports';
 import { fetchSessions, createSession, updateSession, deleteSession } from '../services/api';
 
 const SessionsScreen = () => {
+  const navigate = useNavigate();
+  const { refreshSessions } = useSession();
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -52,11 +56,11 @@ const SessionsScreen = () => {
   // Determine session status based on dates
   const getSessionStatus = (session) => {
     if (!session.date_debut || !session.date_fin) return 'Planifiée'
-    
+
     const now = new Date()
     const debut = new Date(session.date_debut)
     const fin = new Date(session.date_fin)
-    
+
     if (now < debut) return 'Planifiée'
     if (now > fin) return 'Terminée'
     return 'En cours'
@@ -106,12 +110,25 @@ const SessionsScreen = () => {
 
   const confirmDelete = async () => {
     if (!deleteConfirm) return
-    
+
     try {
       await deleteSession(deleteConfirm.id_session)
       showNotification('Succès', 'Session supprimée avec succès', 'success')
       setDeleteConfirm(null)
-      await loadSessions() // Reload sessions
+      await loadSessions() // Reload local sessions list
+
+      // Rafraîchir les sessions dans le contexte et vérifier si la session courante existe encore
+      const currentSessionWasDeleted = await refreshSessions()
+
+      // Si la session courante a été supprimée, rediriger vers /sessions
+      if (currentSessionWasDeleted) {
+        showNotification(
+          'Session supprimée',
+          'La session active a été supprimée. Veuillez sélectionner une autre session.',
+          'warning'
+        )
+        navigate('/sessions')
+      }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error)
       showNotification('Erreur', error.message || 'Impossible de supprimer la session', 'error')
@@ -151,17 +168,24 @@ const SessionsScreen = () => {
         subtitle={`${filteredSessions.length} session(s) affichée(s)`}
         actions={
           <>
-            <Button 
-              variant="outline" 
-              icon={Download} 
+            <Button
+              variant="outline"
+              icon={RefreshCw}
+              onClick={loadSessions}
+            >
+              Actualiser
+            </Button>
+            <Button
+              variant="outline"
+              icon={Download}
               className="hidden sm:inline-flex"
               onClick={handleExport}
             >
               Exporter
             </Button>
-            <Button 
-              variant="primary" 
-              icon={Plus} 
+            <Button
+              variant="primary"
+              icon={Plus}
               onClick={() => {
                 setEditingSession(null)
                 setShowModal(true)
@@ -186,10 +210,10 @@ const SessionsScreen = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
-          
+
           {/* Conditional Type Filter - Only show if sessions have types */}
           {hasTypes && (
-            <select 
+            <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
@@ -210,7 +234,7 @@ const SessionsScreen = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
           {filteredSessions.map((session) => {
             const hasAllData = session.AU && session.Semestre && session.type_session
-            
+
             return (
               <Card key={session.id_session} className="hover:shadow-xl transition-all duration-200 flex flex-col">
                 <div className="flex flex-col h-full space-y-4">
@@ -220,14 +244,14 @@ const SessionsScreen = () => {
                       <h3 className="text-lg font-bold text-gray-900 line-clamp-2">{session.libelle_session}</h3>
                     </div>
                     <div className="flex gap-1">
-                      <button 
+                      <button
                         onClick={() => handleEditSession(session)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Modifier"
                       >
                         <Edit size={16} />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDeleteSession(session)}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Supprimer"
@@ -299,10 +323,10 @@ const SessionsScreen = () => {
                   {/* Action Buttons - Always at bottom */}
                   <div className="pt-3 border-t border-gray-100 mt-auto">
                     {/* View Details Button */}
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      icon={Eye} 
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={Eye}
                       className="w-full"
                       onClick={() => handleViewDetails(session)}
                     >
@@ -366,7 +390,7 @@ const SessionsScreen = () => {
               <span className="font-semibold text-gray-900">
                 "{deleteConfirm.libelle_session}"
               </span>
-              {' '}? Cette action est irréversible.
+              {' '}? Tous les données relatives à cette session seront <span className="font-semibold text-red-600">supprimées.</span>
             </p>
             <div className="flex gap-3 justify-end">
               <Button

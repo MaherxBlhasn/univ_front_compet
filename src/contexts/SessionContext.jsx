@@ -35,13 +35,13 @@ export const SessionProvider = ({ children }) => {
   useEffect(() => {
     const initSession = async () => {
       setLoading(true)
-      
+
       // Load all sessions
       const loadedSessions = await loadSessions()
-      
+
       // Try to get saved session from localStorage
       const savedSessionId = localStorage.getItem('selectedSessionId')
-      
+
       if (savedSessionId && loadedSessions.length > 0) {
         const savedSession = loadedSessions.find(
           s => s.id_session.toString() === savedSessionId
@@ -50,10 +50,10 @@ export const SessionProvider = ({ children }) => {
           setCurrentSession(savedSession)
         }
       }
-      
+
       setLoading(false)
     }
-    
+
     initSession()
   }, [])
 
@@ -74,13 +74,32 @@ export const SessionProvider = ({ children }) => {
     localStorage.removeItem('selectedSessionId')
   }
 
+  // Refresh sessions after delete/update
+  const refreshSessions = async () => {
+    const loadedSessions = await loadSessions()
+
+    // Si la session actuelle n'existe plus, la retirer
+    if (currentSession) {
+      const stillExists = loadedSessions.find(
+        s => s.id_session === currentSession.id_session
+      )
+      if (!stillExists) {
+        clearSession()
+        return true // Indique que la session courante a été supprimée
+      }
+    }
+
+    return false
+  }
+
   const value = {
     currentSession,
     sessions,
     loading,
     changeSession,
     clearSession,
-    loadSessions
+    loadSessions,
+    refreshSessions
   }
 
   return (

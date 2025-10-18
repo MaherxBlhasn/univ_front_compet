@@ -1,13 +1,16 @@
-import { BarChart3, Calendar, Users, Clock, Heart, Settings, LogOut, UserCheck, HardDrive } from 'lucide-react';
+import { BarChart3, Calendar, Users, Clock, Heart, Settings, LogOut, UserCheck, HardDrive, X } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useSession } from '../../contexts/SessionContext';
 import { checkSessionData } from '../../services/api';
 
 const Sidebar = () => {
-  const { currentSession, clearSession } = useSession();
+  const { currentSession, sessions, clearSession } = useSession();
   const navigate = useNavigate();
   const [affectationStatus, setAffectationStatus] = useState(null);
+
+  // Vérifier si on a des sessions
+  const hasNoSessions = sessions.length === 0;
 
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: BarChart3, path: '/dashboard' },
@@ -85,6 +88,15 @@ const Sidebar = () => {
   const handleLogout = () => {
     clearSession(); // Efface la session du contexte et localStorage
     navigate('/sessions'); // Redirige vers le sélecteur de session
+  };
+
+  // Fonction pour fermer l'application
+  const handleCloseApp = () => {
+    if (window.api && window.api.closeApp) {
+      window.api.closeApp();
+    } else {
+      window.close();
+    }
   };
 
   return (
@@ -175,20 +187,28 @@ const Sidebar = () => {
       <div className="p-4 border-t border-gray-200 flex-shrink-0">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 lg:w-11 lg:h-11 bg-blue-100 rounded-full flex items-center justify-center">
-            <span className="text-blue-700 font-semibold text-sm lg:text-base">BS</span>
+            <span className="text-blue-700 font-semibold text-sm lg:text-base">A</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">Belhassen Sehli</p>
-            <p className="text-xs text-gray-500">Administrateur</p>
+            <p className="text-sm font-medium text-gray-900 truncate">Administrateur</p>
           </div>
         </div>
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
-        >
-          <LogOut size={16} />
-          <span>Déconnexion</span>
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+          >
+            <LogOut size={16} />
+            <span>Déconnexion</span>
+          </button>
+          <button
+            onClick={handleCloseApp}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm bg-gradient-to-r from-gray-800 to-gray-900 text-white hover:from-gray-900 hover:to-black rounded-lg transition-all duration-300 font-semibold shadow-md hover:shadow-lg transform hover:scale-[1.02] group"
+          >
+            <X size={18} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span>Fermer l'application</span>
+          </button>
+        </div>
       </div>
     </div>
   )

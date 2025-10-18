@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trash } from 'lucide-react';
+import { Trash, RefreshCw } from 'lucide-react';
 import { useSession } from '../contexts/SessionContext';
 import { fetchAffectations, permuterAffectations, fetchEnseignants, deleteAllAffectations } from '../services/api';
 import Header from '@components/Layout/Header';
@@ -252,6 +252,14 @@ const AffectationsListScreen = () => {
         }
         actions={
           <>
+            {/* Refresh Button */}
+            <Button
+              variant="outline"
+              icon={RefreshCw}
+              onClick={loadAffectations}
+            >
+              Actualiser
+            </Button>
             {/* Delete All Button */}
             {affectations.length > 0 && (
               <Button

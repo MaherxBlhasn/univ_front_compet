@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, MapPin, Edit, Trash2, CheckCircle, XCircle, Monitor, Users } from 'lucide-react'
+import { Plus, Search, MapPin, Edit, Trash2, CheckCircle, XCircle, Monitor, Users, RefreshCw } from 'lucide-react'
 import Header from '@components/Layout/Header'
 import Button from '@components/Common/Button'
 import Card from '@components/Common/Card'
@@ -75,17 +75,24 @@ const RoomsScreen = () => {
         subtitle={`${stats.total} salles enregistrées`}
         actions={
           <>
-            <Button 
-              variant="outline" 
-              icon={MapPin} 
+            <Button
+              variant="outline"
+              icon={RefreshCw}
+              onClick={() => window.location.reload()}
+            >
+              Actualiser
+            </Button>
+            <Button
+              variant="outline"
+              icon={MapPin}
               className="hidden sm:inline-flex"
               onClick={handleViewPlan}
             >
               Voir plan
             </Button>
-            <Button 
-              variant="primary" 
-              icon={Plus} 
+            <Button
+              variant="primary"
+              icon={Plus}
               onClick={() => {
                 setEditingRoom(null)
                 setShowModal(true)
@@ -102,11 +109,10 @@ const RoomsScreen = () => {
         <div className="grid grid-cols-3 gap-4">
           <button
             onClick={() => setFilter('all')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              filter === 'all' 
-                ? 'border-blue-500 bg-blue-50' 
+            className={`p-4 rounded-lg border-2 transition-all ${filter === 'all'
+                ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 hover:border-gray-300'
-            }`}
+              }`}
           >
             <div className="text-center">
               <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
@@ -115,11 +121,10 @@ const RoomsScreen = () => {
           </button>
           <button
             onClick={() => setFilter('available')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              filter === 'available' 
-                ? 'border-green-500 bg-green-50' 
+            className={`p-4 rounded-lg border-2 transition-all ${filter === 'available'
+                ? 'border-green-500 bg-green-50'
                 : 'border-gray-200 hover:border-gray-300'
-            }`}
+              }`}
           >
             <div className="text-center">
               <p className="text-2xl font-bold text-green-600">{stats.available}</p>
@@ -128,11 +133,10 @@ const RoomsScreen = () => {
           </button>
           <button
             onClick={() => setFilter('unavailable')}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              filter === 'unavailable' 
-                ? 'border-red-500 bg-red-50' 
+            className={`p-4 rounded-lg border-2 transition-all ${filter === 'unavailable'
+                ? 'border-red-500 bg-red-50'
                 : 'border-gray-200 hover:border-gray-300'
-            }`}
+              }`}
           >
             <div className="text-center">
               <p className="text-2xl font-bold text-red-600">{stats.unavailable}</p>
@@ -184,14 +188,14 @@ const RoomsScreen = () => {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button 
+                    <button
                       onClick={() => handleEditRoom(room)}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       title="Modifier"
                     >
                       <Edit size={16} />
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDeleteRoom(room.id)}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Supprimer"
@@ -226,11 +230,10 @@ const RoomsScreen = () => {
                 </div>
 
                 {/* Status */}
-                <div className={`flex items-center justify-center gap-2 p-3 rounded-lg ${
-                  room.disponible 
-                    ? 'bg-green-50 text-green-700' 
+                <div className={`flex items-center justify-center gap-2 p-3 rounded-lg ${room.disponible
+                    ? 'bg-green-50 text-green-700'
                     : 'bg-red-50 text-red-700'
-                }`}>
+                  }`}>
                   {room.disponible ? (
                     <>
                       <CheckCircle size={18} />

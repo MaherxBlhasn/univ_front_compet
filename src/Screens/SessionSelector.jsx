@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSession } from '../contexts/SessionContext'
-import { Calendar, CheckCircle, Loader, Plus } from 'lucide-react'
+import { Calendar, CheckCircle, Loader, Plus, RefreshCw } from 'lucide-react'
 import Button from '../components/Common/Button'
 import SessionModal from '../components/Common/SessionModal'
 import { createSession } from '../services/api'
@@ -11,6 +11,10 @@ const SessionSelector = () => {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [creating, setCreating] = useState(false)
 
+  const handleRefresh = () => {
+    window.location.reload()
+  }
+
   const handleCreateSession = async (sessionData) => {
     try {
       setCreating(true)
@@ -18,8 +22,8 @@ const SessionSelector = () => {
       showNotification('Succès', 'Session créée avec succès', 'success')
       await loadSessions() // Reload sessions list
       setShowCreateModal(false)
-      // Optionally select the new session automatically
-      // changeSession(newSession)
+      // Automatically select the new session
+      changeSession(newSession)
     } catch (error) {
       console.error('Erreur lors de la création:', error)
       showNotification('Erreur', 'Impossible de créer la session', 'error')
@@ -148,6 +152,17 @@ const SessionSelector = () => {
           <p className="text-sm text-blue-800">
             💡 <strong>Astuce:</strong> Vous pourrez changer de session à tout moment depuis l'en-tête de l'application.
           </p>
+        </div>
+
+        {/* Refresh Button */}
+        <div className="mt-6 flex justify-center">
+          <Button
+            variant="outline"
+            icon={RefreshCw}
+            onClick={handleRefresh}
+          >
+            Actualiser
+          </Button>
         </div>
 
         {/* Modal de création */}

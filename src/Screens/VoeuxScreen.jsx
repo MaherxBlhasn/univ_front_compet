@@ -11,6 +11,7 @@ import {
     Users,
     TrendingUp,
     Trash,
+    RefreshCw,
 } from 'lucide-react';
 import Header from '@components/Layout/Header';
 import Button from '@components/Common/Button';
@@ -282,6 +283,13 @@ const VoeuxScreen = () => {
                 subtitle={`${filteredVoeux.length} vœu${filteredVoeux.length > 1 ? 'x' : ''} de disponibilité enregistré${filteredVoeux.length > 1 ? 's' : ''}`}
                 actions={
                     <>
+                        <Button
+                            variant="outline"
+                            icon={RefreshCw}
+                            onClick={loadVoeux}
+                        >
+                            Actualiser
+                        </Button>
                         <Button
                             variant="secondary"
                             icon={Upload}

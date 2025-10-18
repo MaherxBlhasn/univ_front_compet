@@ -164,7 +164,7 @@ const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
                     type="text"
                     value={formData.type_session || ''}
                     onChange={(e) => setFormData({ ...formData, type_session: e.target.value })}
-                    placeholder="Ex: Normale, Rattrapage"
+                    placeholder="Ex: Principale, Rattrapage"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

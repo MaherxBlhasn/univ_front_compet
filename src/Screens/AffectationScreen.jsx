@@ -364,11 +364,11 @@ const AffectationScreen = () => {
                           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
                             <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                               <span className="text-lg">👤</span>
-                              Responsables de Salle
+                              Responsables de Salle (Surveillants)
                             </h4>
                             <div className="space-y-2">
                               <div className="flex justify-between items-center">
-                                <span className="text-sm text-gray-600">Total responsables</span>
+                                <span className="text-sm text-gray-600">Total responsables (Surveillants)</span>
                                 <span className="font-bold text-gray-900">{optimizationResult.statistics.responsables.total}</span>
                               </div>
                               <div className="flex justify-between items-center">
