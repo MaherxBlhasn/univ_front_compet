@@ -451,6 +451,30 @@ export const fetchAllSessionsStatistics = async () => {
   return await apiRequest(API_CONFIG.endpoints.allSessionsStatistics)
 }
 
+// ==================== STORAGE ====================
+
+export const getStorageInfo = async () => {
+  return await apiRequest(API_CONFIG.endpoints.storage)
+}
+
+export const deleteAllFiles = async (type = 'all') => {
+  return await apiRequest(`${API_CONFIG.endpoints.deleteAllFiles}?type=${type}`, {
+    method: 'DELETE',
+  })
+}
+
+export const deleteSessionFiles = async (sessionId, type = 'all') => {
+  return await apiRequest(`${API_CONFIG.endpoints.deleteSessionFiles(sessionId)}?type=${type}`, {
+    method: 'DELETE',
+  })
+}
+
+export const cleanupEmptyFolders = async () => {
+  return await apiRequest(API_CONFIG.endpoints.cleanupEmptyFolders, {
+    method: 'DELETE',
+  })
+}
+
 export default {
   // Enseignants
   fetchEnseignants,
@@ -517,4 +541,10 @@ export default {
   // Statistics
   fetchSessionStatistics,
   fetchAllSessionsStatistics,
+  
+  // Storage
+  getStorageInfo,
+  deleteAllFiles,
+  deleteSessionFiles,
+  cleanupEmptyFolders,
 }

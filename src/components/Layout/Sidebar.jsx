@@ -1,4 +1,4 @@
-import { BarChart3, Calendar, Users, Clock, Heart, Settings, LogOut, UserCheck } from 'lucide-react';
+import { BarChart3, Calendar, Users, Clock, Heart, Settings, LogOut, UserCheck, HardDrive } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useSession } from '../../contexts/SessionContext';
@@ -25,6 +25,7 @@ const Sidebar = () => {
         { id: 'affectations-list', label: 'Affectations', path: '/affectations' }
       ]
     },
+    { id: 'storage', label: 'Consommation mémoire', icon: HardDrive, path: '/storage' },
     { id: 'settings', label: 'Paramètres', icon: Settings, path: '/settings' }
   ]
 

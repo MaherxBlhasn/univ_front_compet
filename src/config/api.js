@@ -54,6 +54,12 @@ const API_CONFIG = {
     // Statistics
     sessionStatistics: (id) => `/api/statistics/session/${id}`,
     allSessionsStatistics: '/api/statistics/sessions',
+    
+    // Storage Management
+    storage: '/api/storage/',
+    deleteAllFiles: '/api/storage/delete-all',
+    deleteSessionFiles: (id) => `/api/storage/delete/session/${id}`,
+    cleanupEmptyFolders: '/api/storage/cleanup/empty',
   },
   headers: {
     'Content-Type': 'application/json',

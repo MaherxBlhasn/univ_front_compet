@@ -3,6 +3,7 @@ import { SessionProvider, useSession } from '../../contexts/SessionContext'
 import Sidebar from '../../components/Layout/Sidebar'
 import SessionSelector from '../../Screens/SessionSelector'
 import Dashboard from '../../Screens/Dashboard'
+import StorageScreen from '../../Screens/StorageScreen'
 import TeachersScreen from '../../Screens/TeachersScreen'
 import SessionsScreen from '../../Screens/SessionsScreen'
 import PlanningScreen from '../../Screens/PlanningScreen'
@@ -39,6 +40,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/storage" element={<StorageScreen />} />
         <Route path="/teachers" element={<TeachersScreen />} />
         <Route path="/sessions" element={<SessionsScreen />} />
         <Route path="/planning" element={<PlanningScreen />} />
