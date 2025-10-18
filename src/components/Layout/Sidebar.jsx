@@ -22,7 +22,8 @@ const Sidebar = () => {
       path: '/teachers',
       subItems: [
         { id: 'teachers-list', label: 'Liste des enseignants', path: '/teachers' },
-        { id: 'quota-dispersion', label: 'Dispersion des quotas', path: '/quota-dispersion' }
+        { id: 'quota-dispersion', label: 'Dispersion des quotas', path: '/quota-dispersion' },
+        { id: 'absence-responsables', label: 'Absence des Responsables', path: '/absence-responsables', requiresAffectation: true }
       ]
     },
     { id: 'planning', label: 'Plannings', icon: Clock, path: '/planning' },
@@ -130,7 +131,7 @@ const Sidebar = () => {
             {item.subItems && (
               <div className="ml-3 pl-3 border-l-2 border-gray-200 space-y-0.5">
                 {item.subItems.map((subItem) => {
-                  const isDisabled = (subItem.id === 'affectations-list' || subItem.id === 'quota-dispersion' || subItem.id === 'telechargement') && affectationStatus?.status !== 'yes';
+                  const isDisabled = (subItem.requiresAffectation || subItem.id === 'affectations-list' || subItem.id === 'quota-dispersion' || subItem.id === 'telechargement') && affectationStatus?.status !== 'yes';
 
                   if (isDisabled) {
                     return (

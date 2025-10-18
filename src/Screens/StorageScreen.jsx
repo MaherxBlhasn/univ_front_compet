@@ -114,28 +114,28 @@ const StorageScreen = () => {
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto p-6">
                 {/* Main Layout: Total Général (left) and Breakdown (right) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Left: Total Général Card with Actions */}
-                    <div className="bg-white rounded-xl shadow-md p-8 border border-gray-200">
-                        <h3 className="text-xl font-semibold text-gray-700 mb-6 text-center">Mémoire totale consommée</h3>
-                        <div className="relative w-56 h-56 mx-auto">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    {/* Left: Total Général Card with Actions - Plus compact */}
+                    <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-700 mb-4 text-center">Mémoire totale consommée</h3>
+                        <div className="relative w-48 h-48 mx-auto">
                             <svg className="w-full h-full transform -rotate-90">
                                 <circle
-                                    cx="112"
-                                    cy="112"
-                                    r="100"
+                                    cx="96"
+                                    cy="96"
+                                    r="85"
                                     stroke="#E5E7EB"
-                                    strokeWidth="14"
+                                    strokeWidth="12"
                                     fill="none"
                                 />
                                 <circle
-                                    cx="112"
-                                    cy="112"
-                                    r="100"
+                                    cx="96"
+                                    cy="96"
+                                    r="85"
                                     stroke="url(#totalGradient)"
-                                    strokeWidth="14"
+                                    strokeWidth="12"
                                     fill="none"
-                                    strokeDasharray="628.32"
+                                    strokeDasharray="534"
                                     strokeDashoffset="0"
                                     strokeLinecap="round"
                                     className="transition-all duration-1000"
@@ -148,92 +148,92 @@ const StorageScreen = () => {
                                 </defs>
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <HardDrive className="text-blue-500 mb-3" size={40} />
-                                <span className="text-4xl font-bold text-gray-900">{totals.total_all.formatted}</span>
-                                <span className="text-sm text-gray-500 mt-2">Stockage total</span>
+                                <HardDrive className="text-blue-500 mb-2" size={32} />
+                                <span className="text-3xl font-bold text-gray-900">{totals.total_all.formatted}</span>
+                                <span className="text-xs text-gray-500 mt-1">Stockage total</span>
                             </div>
                         </div>
-                        <div className="mt-8 grid grid-cols-2 gap-4 text-center">
-                            <div className="bg-gray-50 rounded-lg p-3">
-                                <p className="text-2xl font-bold text-blue-600">{total_files}</p>
-                                <p className="text-sm text-gray-600 mt-1">Fichiers</p>
+                        <div className="mt-6 grid grid-cols-2 gap-3 text-center">
+                            <div className="bg-gray-50 rounded-lg p-2.5">
+                                <p className="text-xl font-bold text-blue-600">{total_files}</p>
+                                <p className="text-xs text-gray-600 mt-0.5">Fichiers</p>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-3">
-                                <p className="text-2xl font-bold text-blue-600">{total_sessions}</p>
-                                <p className="text-sm text-gray-600 mt-1">Sessions</p>
+                            <div className="bg-gray-50 rounded-lg p-2.5">
+                                <p className="text-xl font-bold text-blue-600">{total_sessions}</p>
+                                <p className="text-xs text-gray-600 mt-0.5">Sessions</p>
                             </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="mt-6 pt-6 border-t border-gray-200">
-                            <div className="flex flex-wrap gap-2 justify-center">
+                        {/* Action Buttons - Plus grands */}
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => handleDeleteAll('all')}
                                     disabled={deleting}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-xs shadow-sm disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm shadow-sm disabled:opacity-50"
                                 >
-                                    <Trash2 size={14} />
+                                    <Trash2 size={16} />
                                     Tout supprimer
                                 </button>
                                 <button
                                     onClick={() => handleDeleteAll('pdf')}
                                     disabled={deleting}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-xs shadow-sm disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-sm shadow-sm disabled:opacity-50"
                                 >
-                                    <FileText size={14} />
-                                    Supprimer PDF
+                                    <FileText size={16} />
+                                    PDF
                                 </button>
                                 <button
                                     onClick={() => handleDeleteAll('csv')}
                                     disabled={deleting}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-xs shadow-sm disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-sm shadow-sm disabled:opacity-50"
                                 >
-                                    <FileSpreadsheet size={14} />
-                                    Supprimer CSV
+                                    <FileSpreadsheet size={16} />
+                                    CSV
                                 </button>
                                 <button
                                     onClick={handleCleanup}
                                     disabled={deleting}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium text-xs shadow-sm disabled:opacity-50"
+                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-medium text-sm shadow-sm disabled:opacity-50"
                                 >
-                                    <RefreshCw size={14} />
+                                    <RefreshCw size={16} />
                                     Nettoyer
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Right: Affectations and Convocations stacked vertically */}
-                    <div className="flex flex-col gap-6">
+                    {/* Right: Affectations, Convocations et Présences en colonne (3 rows) */}
+                    <div className="flex flex-col gap-4">
                         {/* Affectations */}
-                        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-                                    <FileText className="text-white" size={24} />
+                        <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 p-4 border border-blue-100">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                                    <FileText className="text-white" size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900">Affectations</h3>
-                                    <p className="text-sm text-gray-500">{file_counts.affectations_pdf + file_counts.affectations_csv} fichiers</p>
+                                    <h3 className="text-base font-bold text-gray-900">Affectations</h3>
+                                    <p className="text-xs text-gray-500">{file_counts.affectations_pdf + file_counts.affectations_csv} fichiers</p>
                                 </div>
                             </div>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-100">
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-red-100 hover:border-red-200 transition-colors">
                                     <div className="flex items-center gap-2">
-                                        <FileText className="text-red-600" size={18} />
-                                        <span className="font-medium text-gray-700">PDF</span>
+                                        <FileText className="text-red-600" size={16} />
+                                        <span className="text-sm font-medium text-gray-700">PDF</span>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-red-600">{totals.affectations_pdf.formatted}</p>
+                                        <p className="text-sm font-bold text-red-600">{totals.affectations_pdf.formatted}</p>
                                         <p className="text-xs text-gray-500">{file_counts.affectations_pdf} fichiers</p>
                                     </div>
                                 </div>
-                                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg border border-green-100">
+                                <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-green-100 hover:border-green-200 transition-colors">
                                     <div className="flex items-center gap-2">
-                                        <FileSpreadsheet className="text-green-600" size={18} />
-                                        <span className="font-medium text-gray-700">CSV</span>
+                                        <FileSpreadsheet className="text-green-600" size={16} />
+                                        <span className="text-sm font-medium text-gray-700">CSV</span>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-green-600">{totals.affectations_csv.formatted}</p>
+                                        <p className="text-sm font-bold text-green-600">{totals.affectations_csv.formatted}</p>
                                         <p className="text-xs text-gray-500">{file_counts.affectations_csv} fichiers</p>
                                     </div>
                                 </div>
@@ -241,35 +241,60 @@ const StorageScreen = () => {
                         </div>
 
                         {/* Convocations */}
-                        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-                                    <FileText className="text-white" size={24} />
+                        <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 p-4 border border-purple-100">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                                    <FileText className="text-white" size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900">Convocations</h3>
-                                    <p className="text-sm text-gray-500">{file_counts.convocations_pdf + file_counts.convocations_csv} fichiers</p>
+                                    <h3 className="text-base font-bold text-gray-900">Convocations</h3>
+                                    <p className="text-xs text-gray-500">{file_counts.convocations_pdf + file_counts.convocations_csv} fichiers</p>
                                 </div>
                             </div>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-100">
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-red-100 hover:border-red-200 transition-colors">
                                     <div className="flex items-center gap-2">
-                                        <FileText className="text-red-600" size={18} />
-                                        <span className="font-medium text-gray-700">PDF</span>
+                                        <FileText className="text-red-600" size={16} />
+                                        <span className="text-sm font-medium text-gray-700">PDF</span>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-red-600">{totals.convocations_pdf.formatted}</p>
+                                        <p className="text-sm font-bold text-red-600">{totals.convocations_pdf.formatted}</p>
                                         <p className="text-xs text-gray-500">{file_counts.convocations_pdf} fichiers</p>
                                     </div>
                                 </div>
-                                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg border border-green-100">
+                                <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-green-100 hover:border-green-200 transition-colors">
                                     <div className="flex items-center gap-2">
-                                        <FileSpreadsheet className="text-green-600" size={18} />
-                                        <span className="font-medium text-gray-700">CSV</span>
+                                        <FileSpreadsheet className="text-green-600" size={16} />
+                                        <span className="text-sm font-medium text-gray-700">CSV</span>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-green-600">{totals.convocations_csv.formatted}</p>
+                                        <p className="text-sm font-bold text-green-600">{totals.convocations_csv.formatted}</p>
                                         <p className="text-xs text-gray-500">{file_counts.convocations_csv} fichiers</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Convocations des Responsables */}
+                        <div className="bg-gradient-to-br from-amber-50 to-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 p-4 border border-amber-100">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center shadow-sm">
+                                    <FileText className="text-white" size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-900">Présences Responsables</h3>
+                                    <p className="text-xs text-gray-500">{file_counts.presences_responsables_pdf} fichiers</p>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center p-2 bg-white rounded-lg border border-red-100 hover:border-red-200 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="text-red-600" size={16} />
+                                        <span className="text-sm font-medium text-gray-700">PDF</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-bold text-red-600">{totals.presences_responsables_pdf.formatted}</p>
+                                        <p className="text-xs text-gray-500">{file_counts.presences_responsables_pdf} fichiers</p>
                                     </div>
                                 </div>
                             </div>
@@ -304,6 +329,9 @@ const StorageScreen = () => {
                                         </th>
                                         <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                                             Convocations CSV
+                                        </th>
+                                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                            Présences Resp. PDF
                                         </th>
                                         <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                                             Total
@@ -342,6 +370,11 @@ const StorageScreen = () => {
                                             <td className="px-6 py-4 text-center">
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {session.convocations_csv?.formatted || '0 B'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {session.presences_responsables_pdf?.formatted || '0 B'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">

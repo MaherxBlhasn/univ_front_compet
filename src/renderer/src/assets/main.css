@@ -151,6 +151,7 @@ select::-webkit-scrollbar-thumb {
   font-size: 14px;
   line-height: 14px;
   opacity: 0.8;
+
   &:last-child {
     border: none;
   }
@@ -169,6 +170,7 @@ select::-webkit-scrollbar-thumb {
 }
 
 @media (max-width: 350px) {
+
   .tip,
   .actions {
     display: none;
@@ -181,6 +183,7 @@ select::-webkit-scrollbar-thumb {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -191,6 +194,7 @@ select::-webkit-scrollbar-thumb {
   from {
     width: 100%;
   }
+
   to {
     width: 0%;
   }
@@ -202,4 +206,30 @@ select::-webkit-scrollbar-thumb {
 
 .animate-shrink-width {
   animation: shrink-width 5s linear;
+}
+
+/* Custom scrollbar styles */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Firefox scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
 }

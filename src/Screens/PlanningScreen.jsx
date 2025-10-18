@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, Download, Plus, Edit2, Trash2, Users, MapPin, Trash, Upload, RefreshCw } from 'lucide-react'
+import { Calendar, Clock, Download, Plus, Edit2, Trash2, Users, MapPin, Trash, Upload, RefreshCw, Search } from 'lucide-react'
 import Header from '@components/Layout/Header'
 import Button from '@components/Common/Button'
 import LoadingSpinner from '@components/Common/LoadingSpinner'
@@ -28,6 +28,7 @@ const PlanningScreen = () => {
   const [deleteAllConfirm, setDeleteAllConfirm] = useState(false)
   const [stats, setStats] = useState(null)
   const [filterDate, setFilterDate] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [showImportModal, setShowImportModal] = useState(false)
 
   // Charger les créneaux depuis l'API
@@ -309,13 +310,30 @@ const PlanningScreen = () => {
 
   // Filtrer les créneaux
   const filteredCreneaux = creneaux.filter(creneau => {
-    if (!filterDate) return true
+    // Filtre par date
+    if (filterDate) {
+      const creneauDate = normalizeDate(creneau.dateExam)
+      const filterDateNormalized = normalizeDate(filterDate)
+      if (creneauDate !== filterDateNormalized) return false
+    }
 
-    // Normaliser les deux dates pour la comparaison
-    const creneauDate = normalizeDate(creneau.dateExam)
-    const filterDateNormalized = normalizeDate(filterDate)
+    // Filtre par recherche
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase()
+      return (
+        creneau.codeModule?.toLowerCase().includes(search) ||
+        creneau.libelleModule?.toLowerCase().includes(search) ||
+        creneau.dateExam?.toLowerCase().includes(search) ||
+        creneau.heureDebut?.toLowerCase().includes(search) ||
+        creneau.heureFin?.toLowerCase().includes(search) ||
+        creneau.nom_ens?.toLowerCase().includes(search) ||
+        creneau.prenom_ens?.toLowerCase().includes(search) ||
+        `${creneau.prenom_ens} ${creneau.nom_ens}`.toLowerCase().includes(search) ||
+        creneau.cod_salle?.toLowerCase().includes(search)
+      )
+    }
 
-    return creneauDate === filterDateNormalized
+    return true
   })
 
   const groupedCreneaux = groupByDate(filteredCreneaux)
@@ -470,6 +488,20 @@ const PlanningScreen = () => {
           </div>
         </div>
       )}
+
+      {/* Barre de recherche */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <input
+            type="text"
+            placeholder="Rechercher par responsable, code, salle,  date ou heure..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      </div>
 
       {/* Filtres */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">

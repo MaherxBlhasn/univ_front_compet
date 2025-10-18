@@ -12,6 +12,7 @@ import AffectationScreen from '../../Screens/AffectationScreen'
 import AffectationsListScreen from '../../Screens/AffectationsListScreen'
 import TelechargementScreen from '../../Screens/TelechargementScreen'
 import QuotaDispersionScreen from '../../Screens/QuotaDispersionScreen'
+import AbsenceResponsablesScreen from '../../Screens/AbsenceResponsablesScreen'
 import SettingsScreen from '../../Screens/SettingsScreen'
 
 // Main content component that checks for session
@@ -45,6 +46,7 @@ const AppContent = () => {
         <Route path="/storage" element={<StorageScreen />} />
         <Route path="/teachers" element={<TeachersScreen />} />
         <Route path="/quota-dispersion" element={<QuotaDispersionScreen />} />
+        <Route path="/absence-responsables" element={<AbsenceResponsablesScreen />} />
         <Route path="/sessions" element={<SessionsScreen />} />
         <Route path="/planning" element={<PlanningScreen />} />
         {/* <Route path="/rooms" element={<RoomsScreen />} /> */}
