@@ -3,6 +3,7 @@ import { useSession } from '../contexts/SessionContext';
 import { checkSessionData, runOptimization } from '../services/api';
 import { showNotification } from '../utils/exports';
 import { useNavigate } from 'react-router-dom';
+import Header from '@components/Layout/Header';
 import Button from '../components/Common/Button';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 
@@ -22,7 +23,7 @@ const AffectationScreen = () => {
 
   const loadCheckData = async () => {
     if (!currentSession?.id_session) return;
-    
+
     try {
       setLoading(true);
       const data = await checkSessionData(currentSession.id_session);
@@ -37,11 +38,11 @@ const AffectationScreen = () => {
 
   const handleGenerate = async () => {
     if (!currentSession?.id_session) return;
-    
+
     try {
       setGenerating(true);
       setOptimizationResult(null);
-      
+
       const result = await runOptimization(currentSession.id_session, {
         save: true,
         clear: true,
@@ -49,9 +50,9 @@ const AffectationScreen = () => {
         generate_stats: true
       });
       console.log('📊 Résultat de l\'optimisation:', result);
-      
+
       setOptimizationResult(result);
-      
+
       if (result.success && result.status === 'OPTIMAL') {
         showNotification(
           'success',
@@ -63,7 +64,7 @@ const AffectationScreen = () => {
           'Impossible de générer les affectations. Le problème est infaisable.'
         );
       }
-      
+
     } catch (error) {
       console.error('Erreur génération:', error);
       showNotification('error', 'Erreur lors de la génération: ' + error.message);
@@ -96,21 +97,15 @@ const AffectationScreen = () => {
   return (
     <div className="flex flex-col h-full w-full">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6 flex-shrink-0">
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-800">Affectation des Surveillances</h1>
-            <p className="text-gray-600 mt-2">
-              Session: <span className="font-semibold">{currentSession.libelle_session}</span>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 flex-shrink-0">
+      <Header
+        title="Affectation des Surveillances"
+        subtitle={`Session: ${currentSession.libelle_session}`}
+        actions={
+          <>
             <Button
               onClick={loadCheckData}
               variant="outline"
               disabled={loading || generating}
-              className="min-w-[140px] h-[44px] flex items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -122,7 +117,6 @@ const AffectationScreen = () => {
               onClick={handleGenerate}
               disabled={!canGenerate || generating}
               variant={canGenerate ? "primary" : "secondary"}
-              className="min-w-[140px] h-[44px] flex items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100"
             >
               <span className="w-5 h-5 flex items-center justify-center flex-shrink-0">
                 {generating ? (
@@ -139,108 +133,51 @@ const AffectationScreen = () => {
               </span>
               <span>{generating ? 'Génération...' : canGenerate ? 'Générer' : 'Incomplet'}</span>
             </Button>
+          </>
+        }
+      />
+
+      {/* Status Cards */}
+      {checkData && (
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="grid grid-cols-3 gap-4">
+            {/* Vœux Card */}
+            <div className={`p-4 rounded-lg ${checkData.has_voeux ? 'bg-blue-50' : 'bg-red-50'}`}>
+              <p className={`text-sm font-medium ${checkData.has_voeux ? 'text-blue-600' : 'text-red-600'}`}>
+                Total Vœux
+              </p>
+              <p className={`text-2xl font-bold ${checkData.has_voeux ? 'text-blue-900' : 'text-red-900'}`}>
+                {checkData.details.voeux_count}
+              </p>
+            </div>
+
+            {/* Enseignants Card */}
+            <div className={`p-4 rounded-lg ${checkData.has_enseignants ? 'bg-green-50' : 'bg-red-50'}`}>
+              <p className={`text-sm font-medium ${checkData.has_enseignants ? 'text-green-600' : 'text-red-600'}`}>
+                Enseignants
+              </p>
+              <p className={`text-2xl font-bold ${checkData.has_enseignants ? 'text-green-900' : 'text-red-900'}`}>
+                {checkData.details.enseignants_count}
+              </p>
+            </div>
+
+            {/* Créneaux Card */}
+            <div className={`p-4 rounded-lg ${checkData.has_creneaux ? 'bg-purple-50' : 'bg-red-50'}`}>
+              <p className={`text-sm font-medium ${checkData.has_creneaux ? 'text-purple-600' : 'text-red-600'}`}>
+                Créneaux
+              </p>
+              <p className={`text-2xl font-bold ${checkData.has_creneaux ? 'text-purple-900' : 'text-red-900'}`}>
+                {checkData.details.creneaux_count}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto bg-gray-50 p-8">
-        {/* Status Cards */}
         {checkData && (
           <div className="space-y-6">
-            {/* Data Status Grid */}
-            <div className="grid grid-cols-3 gap-6">
-              {/* Vœux Card - Blue Gradient */}
-              <div className={`rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow duration-300 ${
-                checkData.has_voeux 
-                  ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
-                  : 'bg-gradient-to-br from-red-500 to-red-600'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`text-sm font-medium mb-1 ${
-                      checkData.has_voeux ? 'text-blue-100' : 'text-red-100'
-                    }`}>Total Vœux</p>
-                    <p className="text-4xl font-bold">{checkData.details.voeux_count}</p>
-                    {!checkData.has_voeux && (
-                      <span className="text-xs bg-white/20 px-2 py-1 rounded-full mt-2 inline-block">Manquant</span>
-                    )}
-                  </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                    {checkData.has_voeux ? (
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Enseignants Card - Green Gradient */}
-              <div className={`rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow duration-300 ${
-                checkData.has_enseignants 
-                  ? 'bg-gradient-to-br from-green-500 to-green-600' 
-                  : 'bg-gradient-to-br from-red-500 to-red-600'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`text-sm font-medium mb-1 ${
-                      checkData.has_enseignants ? 'text-green-100' : 'text-red-100'
-                    }`}>Enseignants</p>
-                    <p className="text-4xl font-bold">{checkData.details.enseignants_count}</p>
-                    {!checkData.has_enseignants && (
-                      <span className="text-xs bg-white/20 px-2 py-1 rounded-full mt-2 inline-block">Manquant</span>
-                    )}
-                  </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                    {checkData.has_enseignants ? (
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Créneaux Card - Purple Gradient */}
-              <div className={`rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow duration-300 ${
-                checkData.has_creneaux 
-                  ? 'bg-gradient-to-br from-purple-500 to-purple-600' 
-                  : 'bg-gradient-to-br from-red-500 to-red-600'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`text-sm font-medium mb-1 ${
-                      checkData.has_creneaux ? 'text-purple-100' : 'text-red-100'
-                    }`}>Créneaux</p>
-                    <p className="text-4xl font-bold">{checkData.details.creneaux_count}</p>
-                    {!checkData.has_creneaux && (
-                      <span className="text-xs bg-white/20 px-2 py-1 rounded-full mt-2 inline-block">Manquant</span>
-                    )}
-                  </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                    {checkData.has_creneaux ? (
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Status Alert */}
             {canGenerate ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -506,7 +443,7 @@ const AffectationScreen = () => {
                       </div>
                     )}
 
-                  
+
                   </>
                 ) : (
                   /* Infeasibility Diagnostic */
@@ -523,18 +460,17 @@ const AffectationScreen = () => {
                           Statut: <span className="font-semibold">{optimizationResult.status}</span>
                           {optimizationResult.solve_time && ` | Temps: ${optimizationResult.solve_time.toFixed(2)}s`}
                         </p>
-                        
+
                         {optimizationResult.infeasibility_diagnostic && (
                           <div className="space-y-4">
                             {/* Feasibility Status */}
                             <div className="bg-white rounded-lg border border-red-200 p-4">
                               <div className="flex items-center justify-between mb-3">
                                 <h4 className="font-semibold text-red-900">Analyse de faisabilité</h4>
-                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                  optimizationResult.infeasibility_diagnostic.is_feasible 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-red-100 text-red-800'
-                                }`}>
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${optimizationResult.infeasibility_diagnostic.is_feasible
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                                  }`}>
                                   {optimizationResult.infeasibility_diagnostic.is_feasible ? 'Faisable' : 'Infaisable'}
                                 </span>
                               </div>
@@ -549,9 +485,8 @@ const AffectationScreen = () => {
                                 </div>
                                 <div>
                                   <p className="text-gray-600">Déficit</p>
-                                  <p className={`text-xl font-bold ${
-                                    optimizationResult.infeasibility_diagnostic.deficit > 0 ? 'text-red-600' : 'text-green-600'
-                                  }`}>
+                                  <p className={`text-xl font-bold ${optimizationResult.infeasibility_diagnostic.deficit > 0 ? 'text-red-600' : 'text-green-600'
+                                    }`}>
                                     {optimizationResult.infeasibility_diagnostic.deficit}
                                   </p>
                                 </div>
@@ -559,79 +494,78 @@ const AffectationScreen = () => {
                             </div>
 
                             {/* Reasons */}
-                            {optimizationResult.infeasibility_diagnostic.reasons && 
-                             optimizationResult.infeasibility_diagnostic.reasons.length > 0 && (
-                              <div className="bg-white rounded-lg border border-red-200 p-4">
-                                <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  Raisons de l'infaisabilité
-                                </h4>
-                                <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
-                                  {optimizationResult.infeasibility_diagnostic.reasons.map((reason, idx) => (
-                                    <li key={idx}>
-                                      {typeof reason === 'string' 
-                                        ? reason 
-                                        : reason.message || reason.description || JSON.stringify(reason)
-                                      }
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                            {optimizationResult.infeasibility_diagnostic.reasons &&
+                              optimizationResult.infeasibility_diagnostic.reasons.length > 0 && (
+                                <div className="bg-white rounded-lg border border-red-200 p-4">
+                                  <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Raisons de l'infaisabilité
+                                  </h4>
+                                  <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+                                    {optimizationResult.infeasibility_diagnostic.reasons.map((reason, idx) => (
+                                      <li key={idx}>
+                                        {typeof reason === 'string'
+                                          ? reason
+                                          : reason.message || reason.description || JSON.stringify(reason)
+                                        }
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
 
                             {/* Grades Analysis */}
-                            {optimizationResult.infeasibility_diagnostic.grades_analysis && 
-                             optimizationResult.infeasibility_diagnostic.grades_analysis.length > 0 && (
-                              <div className="bg-white rounded-lg border border-orange-200 p-4">
-                                <h4 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                  </svg>
-                                  Analyse par grade
-                                </h4>
-                                <div className="space-y-2 max-h-64 overflow-auto">
-                                  {optimizationResult.infeasibility_diagnostic.grades_analysis.map((grade, idx) => (
-                                    <div key={idx} className="text-sm bg-orange-50 rounded p-3 border border-orange-100">
-                                      <div className="flex justify-between items-center mb-1">
-                                        <span className="font-medium text-orange-900">{grade.grade || grade.name}</span>
-                                        <span className={`text-xs px-2 py-0.5 rounded ${
-                                          grade.deficit > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                                        }`}>
-                                          {grade.deficit > 0 ? `Déficit: ${grade.deficit}` : 'OK'}
-                                        </span>
+                            {optimizationResult.infeasibility_diagnostic.grades_analysis &&
+                              optimizationResult.infeasibility_diagnostic.grades_analysis.length > 0 && (
+                                <div className="bg-white rounded-lg border border-orange-200 p-4">
+                                  <h4 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                    Analyse par grade
+                                  </h4>
+                                  <div className="space-y-2 max-h-64 overflow-auto">
+                                    {optimizationResult.infeasibility_diagnostic.grades_analysis.map((grade, idx) => (
+                                      <div key={idx} className="text-sm bg-orange-50 rounded p-3 border border-orange-100">
+                                        <div className="flex justify-between items-center mb-1">
+                                          <span className="font-medium text-orange-900">{grade.grade || grade.name}</span>
+                                          <span className={`text-xs px-2 py-0.5 rounded ${grade.deficit > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                                            }`}>
+                                            {grade.deficit > 0 ? `Déficit: ${grade.deficit}` : 'OK'}
+                                          </span>
+                                        </div>
+                                        <div className="flex gap-4 text-xs text-orange-700">
+                                          <span>Requis: {grade.required || grade.total_required || 0}</span>
+                                          <span>Disponible: {grade.available || grade.total_capacity || 0}</span>
+                                        </div>
                                       </div>
-                                      <div className="flex gap-4 text-xs text-orange-700">
-                                        <span>Requis: {grade.required || grade.total_required || 0}</span>
-                                        <span>Disponible: {grade.available || grade.total_capacity || 0}</span>
-                                      </div>
-                                    </div>
-                                  ))}
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
                             {/* Suggestions */}
-                            {optimizationResult.infeasibility_diagnostic.suggestions && 
-                             optimizationResult.infeasibility_diagnostic.suggestions.length > 0 && (
-                              <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
-                                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                                  <span className="text-lg">💡</span>
-                                  Suggestions
-                                </h4>
-                                <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
-                                  {optimizationResult.infeasibility_diagnostic.suggestions.map((suggestion, idx) => (
-                                    <li key={idx}>
-                                      {typeof suggestion === 'string' 
-                                        ? suggestion 
-                                        : suggestion.description || suggestion.message || JSON.stringify(suggestion)
-                                      }
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                            {optimizationResult.infeasibility_diagnostic.suggestions &&
+                              optimizationResult.infeasibility_diagnostic.suggestions.length > 0 && (
+                                <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+                                  <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                    <span className="text-lg">💡</span>
+                                    Suggestions
+                                  </h4>
+                                  <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
+                                    {optimizationResult.infeasibility_diagnostic.suggestions.map((suggestion, idx) => (
+                                      <li key={idx}>
+                                        {typeof suggestion === 'string'
+                                          ? suggestion
+                                          : suggestion.description || suggestion.message || JSON.stringify(suggestion)
+                                        }
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                           </div>
                         )}
                       </div>
@@ -648,7 +582,7 @@ const AffectationScreen = () => {
                   </svg>
                   <p className="text-xl font-semibold text-gray-600">Résultats de l'optimisation</p>
                   <p className="text-sm text-gray-400 mt-2">
-                    {canGenerate 
+                    {canGenerate
                       ? "Cliquez sur 'Générer' pour créer les affectations automatiquement"
                       : "Complétez les données requises pour activer la génération"}
                   </p>
@@ -660,7 +594,7 @@ const AffectationScreen = () => {
 
 
 
-        
+
       </div>
     </div>
   );

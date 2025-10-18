@@ -85,7 +85,7 @@ const PlanningScreen = () => {
         h_debut: normalizeTimeForDB(creneauData.h_debut),
         h_fin: normalizeTimeForDB(creneauData.h_fin)
       }
-      
+
       if (editingCreneau && editingCreneau.creneau_id) {
         await updateCreneau(editingCreneau.creneau_id, dataToSave)
         showNotification('Succès', 'Créneau mis à jour', 'success')
@@ -160,29 +160,29 @@ const PlanningScreen = () => {
 
     try {
       setLoading(true)
-      
+
       // Ajouter la colonne 'session' au fichier avant l'upload
       const fileWithSession = await addSessionColumnToFile(file, currentSession.id_session)
-      
+
       const result = await uploadAndImportFile(fileWithSession, 'creneaux', currentSession.id_session)
-      
+
       if (result.success && result.import) {
         const importData = result.import
         const message = importData.inserted > 0
           ? `${importData.inserted} créneaux importés avec succès`
           : 'Aucun créneau importé'
-        
+
         showNotification('Succès', message, 'success')
-        
+
         if (importData.errors && importData.errors.length > 0) {
           console.warn('Erreurs d\'import:', importData.errors)
           showNotification('Attention', `${importData.errors.length} lignes avec erreurs`, 'warning')
         }
-        
+
         await loadCreneaux()
         await loadStats()
         setShowImportModal(false)
-        
+
         // Notifier le changement pour mettre à jour le statut d'affectation
         notifyDataDeleted()
       } else {
@@ -201,7 +201,7 @@ const PlanningScreen = () => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
-      
+
       if (isExcel) {
         // Pour Excel
         import('xlsx').then(XLSX => {
@@ -212,31 +212,31 @@ const PlanningScreen = () => {
               const firstSheetName = workbook.SheetNames[0]
               const worksheet = workbook.Sheets[firstSheetName]
               const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-              
+
               if (jsonData.length < 2) {
                 reject(new Error('Le fichier doit contenir au moins une ligne d\'en-tête et une ligne de données'))
                 return
               }
-              
+
               // Ajouter 'session' à l'en-tête
               const headers = jsonData[0]
               headers.push('session')
-              
+
               // Ajouter sessionId à chaque ligne de données
               for (let i = 1; i < jsonData.length; i++) {
                 jsonData[i].push(sessionId)
               }
-              
+
               // Créer un nouveau workbook
               const newWorksheet = XLSX.utils.aoa_to_sheet(jsonData)
               const newWorkbook = XLSX.utils.book_new()
               XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Sheet1')
-              
+
               // Convertir en fichier
               const wbout = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' })
               const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
               const newFile = new File([blob], file.name, { type: file.type })
-              
+
               resolve(newFile)
             } catch (error) {
               reject(error)
@@ -250,28 +250,28 @@ const PlanningScreen = () => {
           try {
             const text = e.target.result
             const lines = text.split('\n').filter(line => line.trim())
-            
+
             if (lines.length < 2) {
               reject(new Error('Le fichier CSV doit contenir au moins une ligne d\'en-tête et une ligne de données'))
               return
             }
-            
+
             // Détecter le délimiteur
             const delimiter = lines[0].includes(';') ? ';' : ','
-            
+
             // Ajouter 'session' à l'en-tête
             lines[0] = lines[0] + delimiter + 'session'
-            
+
             // Ajouter sessionId à chaque ligne de données
             for (let i = 1; i < lines.length; i++) {
               lines[i] = lines[i] + delimiter + sessionId
             }
-            
+
             // Créer le nouveau fichier
             const newText = lines.join('\n')
             const blob = new Blob([newText], { type: 'text/csv' })
             const newFile = new File([blob], file.name, { type: file.type })
-            
+
             resolve(newFile)
           } catch (error) {
             reject(error)
@@ -285,13 +285,13 @@ const PlanningScreen = () => {
   // Normaliser une date pour le tri et le groupement
   const normalizeDate = (dateStr) => {
     if (!dateStr) return ''
-    
+
     // Format DD/MM/YYYY -> YYYY-MM-DD
     if (dateStr.includes('/')) {
       const [day, month, year] = dateStr.split('/')
       return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
     }
-    
+
     return dateStr
   }
 
@@ -310,30 +310,30 @@ const PlanningScreen = () => {
   // Filtrer les créneaux
   const filteredCreneaux = creneaux.filter(creneau => {
     if (!filterDate) return true
-    
+
     // Normaliser les deux dates pour la comparaison
     const creneauDate = normalizeDate(creneau.dateExam)
     const filterDateNormalized = normalizeDate(filterDate)
-    
+
     return creneauDate === filterDateNormalized
   })
 
   const groupedCreneaux = groupByDate(filteredCreneaux)
   const dates = Object.keys(groupedCreneaux).sort()
-  
+
   // Obtenir toutes les dates uniques des créneaux (pour le filtre)
   // Normaliser TOUTES les dates pour éviter les doublons (DD/MM/YYYY vs YYYY-MM-DD)
   const allDates = [...new Set(creneaux.map(c => normalizeDate(c.dateExam)).filter(Boolean))].sort()
-  
+
   console.log('🔍 DEBUG - Dates brutes:', creneaux.map(c => c.dateExam))
   console.log('🔍 DEBUG - Dates normalisées:', allDates)
-  
+
   // Formater une date en format lisible (supporte plusieurs formats d'entrée)
   const formatDate = (dateStr) => {
     if (!dateStr) return 'Date invalide'
-    
+
     let date
-    
+
     // Si c'est déjà un objet Date
     if (dateStr instanceof Date) {
       date = dateStr
@@ -352,17 +352,17 @@ const PlanningScreen = () => {
     else {
       date = new Date(dateStr)
     }
-    
+
     // Vérifier si la date est valide
     if (isNaN(date.getTime())) {
       return `Date invalide (${dateStr})`
     }
-    
-    return date.toLocaleDateString('fr-FR', { 
-      weekday: 'long', 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
+
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
     })
   }
 
@@ -394,18 +394,18 @@ const PlanningScreen = () => {
     <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
       <Header
         title="Planning des Créneaux d'Examens"
-        subtitle={currentSession ? `Session: ${currentSession.libelle_session} - ${filteredCreneaux.length} créneau(x)` : "Gérez les créneaux d'examens"}
+        subtitle={currentSession ? `${currentSession.libelle_session} - ${filteredCreneaux.length} créneau(x)` : "Gérez les créneaux d'examens"}
         actions={
           <>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               icon={Upload}
               onClick={() => setShowImportModal(true)}
             >
               Importer
             </Button>
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               icon={Download}
               onClick={handleExportCSV}
               disabled={creneaux.length === 0}
@@ -413,16 +413,16 @@ const PlanningScreen = () => {
               Exporter
             </Button>
             {creneaux.length > 0 && (
-              <Button 
-                variant="danger" 
+              <Button
+                variant="danger"
                 icon={Trash}
                 onClick={handleDeleteAll}
               >
                 Supprimer tout
               </Button>
             )}
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               icon={Plus}
               onClick={() => {
                 setEditingCreneau(null)
@@ -486,26 +486,25 @@ const PlanningScreen = () => {
               </div>
               <div className="flex flex-wrap gap-2">
                 {allDates.map((date) => {
-                  const dateObj = date.includes('/') 
+                  const dateObj = date.includes('/')
                     ? new Date(date.split('/').reverse().join('-'))
                     : new Date(date)
-                  const displayDate = dateObj.toLocaleDateString('fr-FR', { 
-                    day: '2-digit', 
+                  const displayDate = dateObj.toLocaleDateString('fr-FR', {
+                    day: '2-digit',
                     month: 'short',
                     year: 'numeric'
                   })
                   const creneauxCount = creneaux.filter(c => normalizeDate(c.dateExam) === date).length
                   const isActive = filterDate === date
-                  
+
                   return (
                     <button
                       key={date}
                       onClick={() => setFilterDate(date)}
-                      className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium border-2 ${
-                        isActive 
-                          ? 'bg-blue-500 text-white border-blue-600 shadow-md' 
-                          : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                      }`}
+                      className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium border-2 ${isActive
+                        ? 'bg-blue-500 text-white border-blue-600 shadow-md'
+                        : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                        }`}
                     >
                       {displayDate} <span className="font-bold">({creneauxCount})</span>
                     </button>
@@ -514,7 +513,7 @@ const PlanningScreen = () => {
               </div>
             </div>
           )}
-          
+
           {allDates.length === 0 && (
             <div className="text-center py-4 text-gray-500">
               <Calendar size={32} className="mx-auto mb-2 text-gray-300" />
@@ -566,79 +565,96 @@ const PlanningScreen = () => {
                   {groupedCreneaux[date]
                     .sort((a, b) => a.h_debut.localeCompare(b.h_debut))
                     .map((creneau) => (
-                    <div
-                      key={creneau.creneau_id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3">
-                            {/* Horaire */}
-                            <div className="flex items-center gap-2 text-gray-700">
-                              <Clock size={16} />
-                              <span className="font-semibold">
-                                {formatTime(creneau.h_debut)} - {formatTime(creneau.h_fin)}
-                              </span>
-                            </div>
-
-                            {/* Semestre */}
-                            {creneau.semestre && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                                {creneau.semestre}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                            {/* Enseignant responsable */}
-                            {creneau.enseignant && (
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <Users size={14} className="text-blue-500" />
-                                <span>
-                                  <strong>Resp.:</strong> {creneau.prenom_ens} {creneau.nom_ens}
+                      <div
+                        key={creneau.creneau_id}
+                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3 flex-wrap">
+                              {/* Horaire */}
+                              <div className="flex items-center gap-2 text-gray-700">
+                                <Clock size={16} />
+                                <span className="font-semibold">
+                                  {formatTime(creneau.h_debut)} - {formatTime(creneau.h_fin)}
                                 </span>
                               </div>
-                            )}
 
-                            {/* Salle */}
-                            {creneau.cod_salle && (
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <MapPin size={14} className="text-green-500" />
-                                <span>
-                                  <strong>Salle:</strong> {creneau.cod_salle}
+                              {/* Session Details */}
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <span className="font-medium">{currentSession?.libelle_session || 'Session'}</span>
+                                {(creneau.semestre || currentSession?.Semestre) && (
+                                  <>
+                                    <span>-</span>
+                                    <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                                      {creneau.semestre || currentSession.Semestre}
+                                    </span>
+                                  </>
+                                )}
+                                {currentSession?.type_session && (
+                                  <>
+                                    <span>,</span>
+                                    <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">
+                                      {currentSession.type_session}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                              {/* Enseignant responsable */}
+                              {creneau.enseignant && (
+                                <div className="flex items-center gap-2">
+                                  <Users size={14} className="text-blue-500" />
+                                  <span className="text-gray-600">
+                                    <strong>Resp.:</strong>
+                                  </span>
+                                  <span className="px-2 py-1 bg-red-50 rounded text-red-600 font-medium">
+                                    {creneau.prenom_ens} {creneau.nom_ens}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Salle */}
+                              {creneau.cod_salle && (
+                                <div className="flex items-center gap-2 text-gray-600">
+                                  <MapPin size={14} className="text-green-500" />
+                                  <span>
+                                    <strong>Salle:</strong> {creneau.cod_salle}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* ID Créneau */}
+                              <div className="flex items-center gap-2 text-gray-500">
+                                <span className="text-xs font-mono">
+                                  ID: {creneau.creneau_id}
                                 </span>
                               </div>
-                            )}
-
-                            {/* ID Créneau */}
-                            <div className="flex items-center gap-2 text-gray-500">
-                              <span className="text-xs font-mono">
-                                ID: {creneau.creneau_id}
-                              </span>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Actions */}
-                        <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={() => handleEditCreneau(creneau)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Modifier"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCreneau(creneau)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Supprimer"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          {/* Actions */}
+                          <div className="flex gap-2 ml-4">
+                            <button
+                              onClick={() => handleEditCreneau(creneau)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                              title="Modifier"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCreneau(creneau)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="Supprimer"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             ))}
@@ -710,7 +726,7 @@ const PlanningScreen = () => {
               <h3 className="text-lg font-semibold text-gray-900">Supprimer tous les créneaux</h3>
             </div>
             <p className="text-gray-600 mb-6">
-              ⚠️ Êtes-vous absolument sûr de vouloir supprimer <strong>TOUS les créneaux</strong> ({creneaux.length}) ? 
+              ⚠️ Êtes-vous absolument sûr de vouloir supprimer <strong>TOUS les créneaux</strong> ({creneaux.length}) ?
               Cette action est <strong>irréversible</strong> et supprimera toutes les données associées.
             </p>
             <div className="flex gap-3 justify-end">

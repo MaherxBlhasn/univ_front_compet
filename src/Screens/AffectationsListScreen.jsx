@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
+import { Trash } from 'lucide-react';
 import { useSession } from '../contexts/SessionContext';
 import { fetchAffectations, permuterAffectations, fetchEnseignants, deleteAllAffectations } from '../services/api';
+import Header from '@components/Layout/Header';
+import Button from '@components/Common/Button';
 import SwapConfirmationModal from '../components/Common/SwapConfirmationModal';
 import Modal from '../components/Common/Modal';
+import { getInitials } from '../utils/formatters';
 
 const AffectationsListScreen = () => {
   const { currentSession } = useSession();
@@ -29,7 +33,7 @@ const AffectationsListScreen = () => {
 
   const loadAffectations = async () => {
     if (!currentSession?.id_session) return;
-    
+
     try {
       setLoading(true);
       const [affectationsData, enseignantsData] = await Promise.all([
@@ -40,6 +44,15 @@ const AffectationsListScreen = () => {
       setEnseignants(enseignantsData || []);
       console.log('📋 Affectations chargées:', affectationsData);
       console.log('👥 Enseignants chargés:', enseignantsData);
+      if (affectationsData && affectationsData.length > 0) {
+        console.log('🔍 Structure première affectation:', affectationsData[0]);
+        console.log('🔍 Champs enseignant:', {
+          enseignant: affectationsData[0].enseignant,
+          prenom_ens: affectationsData[0].prenom_ens,
+          nom_ens: affectationsData[0].nom_ens,
+          code_smartex_ens: affectationsData[0].code_smartex_ens
+        });
+      }
     } catch (error) {
       console.error('Erreur chargement affectations:', error);
     } finally {
@@ -54,6 +67,23 @@ const AffectationsListScreen = () => {
       return `${teacher.nom_ens || ''} ${teacher.prenom_ens || ''}`.trim() || `Prof ${code}`;
     }
     return `Prof ${code}`;
+  };
+
+  // Generate avatar color based on code
+  const getAvatarColor = (code) => {
+    const colors = [
+      { bg: 'bg-blue-500', text: 'text-white' },
+      { bg: 'bg-purple-500', text: 'text-white' },
+      { bg: 'bg-pink-500', text: 'text-white' },
+      { bg: 'bg-indigo-500', text: 'text-white' },
+      { bg: 'bg-cyan-500', text: 'text-white' },
+      { bg: 'bg-teal-500', text: 'text-white' },
+      { bg: 'bg-green-500', text: 'text-white' },
+      { bg: 'bg-yellow-500', text: 'text-white' },
+      { bg: 'bg-orange-500', text: 'text-white' },
+      { bg: 'bg-red-500', text: 'text-white' },
+    ];
+    return colors[code % colors.length];
   };
 
   // Handle drop - show confirmation modal
@@ -73,7 +103,7 @@ const AffectationsListScreen = () => {
 
     try {
       setSwapping(true);
-      
+
       // Call permuter API
       const result = await permuterAffectations(
         draggedProf.affectation_id,
@@ -91,16 +121,16 @@ const AffectationsListScreen = () => {
       await loadAffectations();
     } catch (error) {
       console.error('❌ Error swapping professors:', error);
-      
+
       // Close modal first
       setShowSwapModal(false);
       setSwapTarget(null);
       setDraggedProf(null);
-      
+
       // Show beautiful error notification
       setErrorMessage(error.message || 'Erreur lors de la permutation');
       setShowError(true);
-      
+
       // Auto-hide after 5 seconds
       setTimeout(() => {
         setShowError(false);
@@ -122,24 +152,24 @@ const AffectationsListScreen = () => {
     try {
       setDeleting(true);
       await deleteAllAffectations();
-      
+
       // Close modal
       setShowDeleteAllModal(false);
-      
+
       // Reload affectations (will be empty)
       await loadAffectations();
-      
+
       console.log('✅ Toutes les affectations ont été supprimées');
     } catch (error) {
       console.error('❌ Error deleting affectations:', error);
-      
+
       // Close modal first
       setShowDeleteAllModal(false);
-      
+
       // Show error notification
       setErrorMessage(error.message || 'Erreur lors de la suppression');
       setShowError(true);
-      
+
       // Auto-hide after 5 seconds
       setTimeout(() => {
         setShowError(false);
@@ -157,7 +187,7 @@ const AffectationsListScreen = () => {
     return affectations.filter(aff => {
       const teacherName = getTeacherName(aff.code_smartex_ens).toLowerCase();
       const teacherCode = aff.code_smartex_ens.toString();
-      
+
       return teacherName.includes(query) || teacherCode.includes(query);
     });
   };
@@ -177,7 +207,7 @@ const AffectationsListScreen = () => {
       } else if (groupBy === 'salle') {
         key = aff.cod_salle || 'Sans salle';
       }
-      
+
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(aff);
     });
@@ -202,77 +232,80 @@ const AffectationsListScreen = () => {
   return (
     <div className="flex flex-col h-full w-full">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6 flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Liste des Affectations</h1>
-            <p className="text-gray-600 mt-2">
-              Session: <span className="font-semibold">{currentSession.libelle_session}</span>
-              {affectations.length > 0 && (
-                <>
-                  <span className="ml-4 text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">
-                    {affectations.length} total
+      <Header
+        title="Liste des Affectations"
+        subtitle={
+          <>
+            {affectations.length > 0 && (
+              <>
+                <span className="ml-0 text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">
+                  {affectations.length} total
+                </span>
+                {searchQuery && filteredAffectations().length !== affectations.length && (
+                  <span className="ml-2 text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
+                    {filteredAffectations().length} filtrées
                   </span>
-                  {searchQuery && filteredAffectations().length !== affectations.length && (
-                    <span className="ml-2 text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">
-                      {filteredAffectations().length} filtrées
-                    </span>
-                  )}
-                </>
-              )}
-            </p>
-          </div>
+                )}
+              </>
+            )}
+          </>
+        }
+        actions={
+          <>
+            {/* Delete All Button */}
+            {affectations.length > 0 && (
+              <Button
+                variant="danger"
+                icon={Trash}
+                onClick={() => setShowDeleteAllModal(true)}
+              >
+                Supprimer tout
+              </Button>
+            )}
+          </>
+        }
+      />
 
-          {/* Group By Selector and Delete Button */}
+      {/* Group By Selector and Search */}
+      <div className="bg-white border-b border-gray-200 px-8 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between mb-4">
+          {/* Group By Selector */}
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-gray-700">Grouper par:</span>
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setGroupBy('jour')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  groupBy === 'jour'
-                    ? 'bg-white text-blue-700 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${groupBy === 'jour'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+                  }`}
               >
                 📅 Jour
               </button>
               <button
                 onClick={() => setGroupBy('enseignant')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  groupBy === 'enseignant'
-                    ? 'bg-white text-blue-700 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${groupBy === 'enseignant'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+                  }`}
               >
                 👤 Enseignant
               </button>
               <button
                 onClick={() => setGroupBy('salle')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  groupBy === 'salle'
-                    ? 'bg-white text-blue-700 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${groupBy === 'salle'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+                  }`}
               >
                 🏫 Salle
               </button>
             </div>
-            
-            {/* Delete All Button */}
-            {affectations.length > 0 && (
-              <button
-                onClick={() => setShowDeleteAllModal(true)}
-                className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition-all border border-red-200 hover:border-red-300"
-              >
-                🗑️ Supprimer Tout
-              </button>
-            )}
           </div>
         </div>
 
         {/* Search Filter */}
-        <div className="mt-4">
+        <div>
           <div className="relative max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,6 +368,9 @@ const AffectationsListScreen = () => {
                         <th className="px-6 py-3 text-left">
                           <div className="h-4 bg-gray-200 rounded w-20"></div>
                         </th>
+                        <th className="px-6 py-3 text-left">
+                          <div className="h-4 bg-gray-200 rounded w-32"></div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -359,7 +395,10 @@ const AffectationsListScreen = () => {
                             <div className="h-6 bg-gray-200 rounded w-16"></div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-4 bg-gray-200 rounded w-12"></div>
+                            <div className="h-4 bg-gray-200 rounded w-28"></div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="h-4 bg-gray-200 rounded w-32"></div>
                           </td>
                         </tr>
                       ))}
@@ -429,6 +468,9 @@ const AffectationsListScreen = () => {
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Code
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Enseignant
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -441,7 +483,10 @@ const AffectationsListScreen = () => {
                           Salle
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Position
+                          Session
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Enseignant Responsable
                         </th>
                       </tr>
                     </thead>
@@ -449,11 +494,10 @@ const AffectationsListScreen = () => {
                       {grouped[groupKey].map((affectation) => (
                         <tr
                           key={affectation.affectation_id}
-                          className={`hover:bg-gray-50 transition-colors ${
-                            selectedAffectation?.affectation_id === affectation.affectation_id
-                              ? 'bg-blue-50'
-                              : ''
-                          }`}
+                          className={`hover:bg-gray-50 transition-colors ${selectedAffectation?.affectation_id === affectation.affectation_id
+                            ? 'bg-blue-50'
+                            : ''
+                            }`}
                           onClick={() => setSelectedAffectation(affectation)}
                           onDragOver={(e) => {
                             e.preventDefault();
@@ -470,10 +514,17 @@ const AffectationsListScreen = () => {
                             handleDrop(affectation);
                           }}
                         >
+                          {/* Code Column */}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="text-sm font-medium text-gray-900">
+                              {affectation.code_smartex_ens}
+                            </span>
+                          </td>
+
                           {/* Draggable Professor Column */}
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div 
-                              className="flex items-center cursor-grab active:cursor-grabbing hover:bg-blue-100 p-2 rounded-lg transition-all"
+                            <div
+                              className="flex items-center cursor-grab active:cursor-grabbing hover:bg-blue-50 p-2 rounded-lg transition-all"
                               draggable
                               onDragStart={(e) => {
                                 e.stopPropagation();
@@ -484,15 +535,16 @@ const AffectationsListScreen = () => {
                                 e.currentTarget.classList.remove('opacity-50');
                               }}
                             >
-                              {/* Drag Handle Icon */}
-                              <svg className="w-4 h-4 text-gray-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path>
-                              </svg>
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mr-3 flex-shrink-0">
-                                {affectation.code_smartex_ens.toString().slice(-2)}
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm mr-3 flex-shrink-0 bg-blue-100 text-blue-600">
+                                {getInitials(affectation.prenom_ens, affectation.nom_ens)}
                               </div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {getTeacherName(affectation.code_smartex_ens)}
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {getTeacherName(affectation.code_smartex_ens)}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {affectation.email_ens || ''}
+                                </div>
                               </div>
                             </div>
                           </td>
@@ -512,8 +564,15 @@ const AffectationsListScreen = () => {
                               {affectation.cod_salle || '-'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {affectation.position || '-'}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            {currentSession?.libelle_session || 'Session'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="inline-block px-3 py-1 bg-red-50 rounded-lg">
+                              <span className="text-sm font-medium text-red-600">
+                                {affectation.enseignant ? getTeacherName(affectation.enseignant) : '-'}
+                              </span>
+                            </div>
                           </td>
                         </tr>
                       ))}

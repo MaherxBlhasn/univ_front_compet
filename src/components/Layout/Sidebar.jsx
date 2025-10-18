@@ -12,7 +12,16 @@ const Sidebar = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de bord', icon: BarChart3, path: '/dashboard' },
     { id: 'sessions', label: 'Sessions d\'examens', icon: Calendar, path: '/sessions' },
-    { id: 'teachers', label: 'Enseignants', icon: Users, path: '/teachers' },
+    {
+      id: 'teachers',
+      label: 'Enseignants',
+      icon: Users,
+      path: '/teachers',
+      subItems: [
+        { id: 'teachers-list', label: 'Liste des enseignants', path: '/teachers' },
+        { id: 'quota-dispersion', label: 'Dispersion des quotas', path: '/quota-dispersion' }
+      ]
+    },
     { id: 'planning', label: 'Plannings', icon: Clock, path: '/planning' },
     { id: 'voeux', label: 'Vœux', icon: Heart, path: '/voeux' },
     {
@@ -21,7 +30,7 @@ const Sidebar = () => {
       icon: UserCheck,
       path: '/affectation',
       subItems: [
-        { id: 'affectation-generation', label: 'Répartition automatique', path: '/affectation' },
+        { id: 'affectation-generation', label: 'Lancer l’optimisation', path: '/affectation' },
         { id: 'affectations-list', label: 'Affectations', path: '/affectations' }
       ]
     },
@@ -108,7 +117,7 @@ const Sidebar = () => {
             {item.subItems && (
               <div className="ml-3 pl-3 border-l-2 border-gray-200 space-y-0.5">
                 {item.subItems.map((subItem) => {
-                  const isDisabled = subItem.id === 'affectations-list' && affectationStatus?.status !== 'yes';
+                  const isDisabled = (subItem.id === 'affectations-list' || subItem.id === 'quota-dispersion') && affectationStatus?.status !== 'yes';
 
                   if (isDisabled) {
                     return (

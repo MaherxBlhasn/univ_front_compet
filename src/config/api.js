@@ -60,6 +60,14 @@ const API_CONFIG = {
     deleteAllFiles: '/api/storage/delete-all',
     deleteSessionFiles: (id) => `/api/storage/delete/session/${id}`,
     cleanupEmptyFolders: '/api/storage/cleanup/empty',
+    
+    // Quota Enseignants
+    quotaEnseignants: '/api/quota-enseignants',
+    quotaEnseignant: (code) => `/api/quota-enseignants/enseignant/${code}`,
+    deleteAllQuotas: '/api/quota-enseignants/all',
+    deleteQuotasBySession: (id) => `/api/quota-enseignants/session/${id}`,
+    resetQuotasBySession: (id) => `/api/quota-enseignants/reset/session/${id}`,
+    resetAllQuotas: '/api/quota-enseignants/reset/all',
   },
   headers: {
     'Content-Type': 'application/json',

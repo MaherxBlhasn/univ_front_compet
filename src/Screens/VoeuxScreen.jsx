@@ -160,24 +160,24 @@ const VoeuxScreen = () => {
     const handleImportCSV = async (file) => {
         try {
             setLoading(true)
-            
+
             // Utiliser la nouvelle API unifiée qui supporte CSV et XLSX
             console.log('📤 Upload et import du fichier:', file.name)
             const result = await uploadAndImportFile(file, 'voeux', currentSession?.id_session)
             console.log('✅ Upload et import terminés:', result)
-            
+
             // Afficher le résultat
             if (result.success && result.import) {
                 const importData = result.import
                 showNotification(
-                    'Succès', 
-                    `${importData.inserted || 0} vœux importés${importData.errors && importData.errors.length > 0 ? ` (${importData.errors.length} erreurs)` : ''}`, 
+                    'Succès',
+                    `${importData.inserted || 0} vœux importés${importData.errors && importData.errors.length > 0 ? ` (${importData.errors.length} erreurs)` : ''}`,
                     'success'
                 )
-                
+
                 // Recharger les vœux
                 await loadVoeux()
-                
+
                 // Notifier le changement pour mettre à jour le statut d'affectation
                 notifyDataDeleted()
             } else {
@@ -197,20 +197,20 @@ const VoeuxScreen = () => {
     }
 
 
-    
+
     // Filtrage - Filter by current exam session and search term
     const filteredVoeux = voeux.filter(voeu => {
         console.log("zzzz", voeu.nom_ens);
-        
+
         const matchSearch = searchTerm === '' ||
             voeu.nom_ens.toLowerCase().includes(searchTerm.toLowerCase()) ||
             voeu.prenom_ens.toLowerCase().includes(searchTerm.toLowerCase()) ||
             voeu.code_smartex_ens.toString().includes(searchTerm)
-        
+
         // Filter by current exam session
-        const matchSession = !currentSession || 
+        const matchSession = !currentSession ||
             voeu.id_session === currentSession.id_session
-        
+
         return matchSearch && matchSession
     })
 
@@ -225,10 +225,10 @@ const VoeuxScreen = () => {
                 voeux: []
             }
         }
-        acc[key].voeux.push({ 
+        acc[key].voeux.push({
             voeu_id: voeu.voeu_id,  // ← IMPORTANT: Include voeu_id for deletion
-            jour: voeu.jour, 
-            seance: voeu.seance 
+            jour: voeu.jour,
+            seance: voeu.seance
         })
         return acc
     }, {})
@@ -276,7 +276,7 @@ const VoeuxScreen = () => {
     console.log('🔍 DEBUG - teachersWithVoeux:', teachersWithVoeux)
 
     return (
-        <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+        <div className="flex-1 flex flex-col bg-white overflow-hidden">
             <Header
                 title="Gestion des Vœux de Non-Surveillance"
                 subtitle={`${filteredVoeux.length} vœu${filteredVoeux.length > 1 ? 'x' : ''} de disponibilité enregistré${filteredVoeux.length > 1 ? 's' : ''}`}
@@ -334,53 +334,35 @@ const VoeuxScreen = () => {
                 </div>
             </div>
 
-            {/* Content */}
-            <main className="flex-1 overflow-y-auto p-6">
-                {/* Statistics Cards */}
-                {teachersWithVoeux.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-blue-100 text-sm font-medium">Total Vœux</p>
-                                    <p className="text-3xl font-bold mt-1">{stats.totalVoeux}</p>
-                                </div>
-                                <Heart className="text-blue-200" size={40} />
-                            </div>
+            {/* Statistics Cards */}
+            {teachersWithVoeux.length > 0 && (
+                <div className="bg-white border-b border-gray-200 px-6 py-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                            <p className="text-sm text-blue-600 font-medium">Total Vœux</p>
+                            <p className="text-2xl font-bold text-blue-900">{stats.totalVoeux}</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-5 text-white">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-green-100 text-sm font-medium">Enseignants</p>
-                                    <p className="text-3xl font-bold mt-1">{stats.totalEnseignants}</p>
-                                </div>
-                                <Users className="text-green-200" size={40} />
-                            </div>
+                        <div className="p-4 bg-green-50 rounded-lg">
+                            <p className="text-sm text-green-600 font-medium">Enseignants</p>
+                            <p className="text-2xl font-bold text-green-900">{stats.totalEnseignants}</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-purple-100 text-sm font-medium">Moyenne/Enseignant</p>
-                                    <p className="text-3xl font-bold mt-1">{stats.voeuxParEnseignant}</p>
-                                </div>
-                                <TrendingUp className="text-purple-200" size={40} />
-                            </div>
+                        <div className="p-4 bg-purple-50 rounded-lg">
+                            <p className="text-sm text-purple-600 font-medium">Moyenne/Enseignant</p>
+                            <p className="text-2xl font-bold text-purple-900">{stats.voeuxParEnseignant}</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-5 text-white">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-orange-100 text-sm font-medium">Jour Populaire</p>
-                                    <p className="text-2xl font-bold mt-1">{JOURS[stats.jourLePlusPopulaire] || '-'}</p>
-                                </div>
-                                <Calendar className="text-orange-200" size={40} />
-                            </div>
+                        <div className="p-4 bg-orange-50 rounded-lg">
+                            <p className="text-sm text-orange-600 font-medium">Jour Populaire</p>
+                            <p className="text-2xl font-bold text-orange-900">{JOURS[stats.jourLePlusPopulaire] || '-'}</p>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
+            {/* Content */}
+            <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
                 {teachersWithVoeux.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-96">
                         <Heart size={64} className="text-gray-300 mb-4" />
@@ -409,7 +391,7 @@ const VoeuxScreen = () => {
                             >
                                 {/* Header de la carte */}
                                 <div className="bg-white border-b border-gray-200 p-4">
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between mb-2">
                                         <div>
                                             <h3 className="font-semibold text-gray-900">
                                                 {teacher.prenom} {teacher.nom}
@@ -423,13 +405,27 @@ const VoeuxScreen = () => {
                                             </span>
                                         </div>
                                     </div>
+                                    {/* Session Details */}
+                                    <div className="flex items-center gap-2 text-xs text-gray-600 flex-wrap">
+                                        <span className="font-medium">{currentSession?.libelle_session || 'Session'}</span>
+                                        {currentSession?.Semestre && (
+                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded font-medium">
+                                                Semestre: {currentSession.Semestre}
+                                            </span>
+                                        )}
+                                        {currentSession?.type_session && (
+                                            <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded font-medium">
+                                                {currentSession.type_session}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Liste des vœux */}
                                 <div className="p-4 space-y-2">
                                     {teacher.voeux.map((v, index) => (
-                                        <div 
-                                            key={index} 
+                                        <div
+                                            key={index}
                                             className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
                                         >
                                             <span className="text-sm text-gray-700">
@@ -539,7 +535,7 @@ const VoeuxScreen = () => {
                             <h3 className="text-lg font-semibold text-gray-900">Supprimer tous les vœux</h3>
                         </div>
                         <p className="text-gray-600 mb-6">
-                            ⚠️ Êtes-vous absolument sûr de vouloir supprimer <strong>TOUS les vœux</strong> ({voeux.length}) ? 
+                            ⚠️ Êtes-vous absolument sûr de vouloir supprimer <strong>TOUS les vœux</strong> ({voeux.length}) ?
                             Cette action est <strong>irréversible</strong> et supprimera toutes les données associées.
                         </p>
                         <div className="flex gap-3 justify-end">
