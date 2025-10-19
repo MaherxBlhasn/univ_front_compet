@@ -27,7 +27,7 @@ const QuotaDispersionScreen = () => {
             const response = await fetch(`http://127.0.0.1:5000/api/quota-enseignants`);
             const data = await response.json();
             setQuotas(data);
-            
+
             // Extraire les sessions uniques des quotas
             const uniqueSessions = [...new Set(data.map(q => q.id_session))].filter(Boolean);
             const sessionsData = uniqueSessions.map(id => ({
@@ -82,7 +82,7 @@ const QuotaDispersionScreen = () => {
     const confirmAction = async () => {
         try {
             const targetSession = sessionFilter === 'all' ? null : sessionFilter;
-            
+
             if (deleteConfirm.action === 'resetAll') {
                 if (targetSession) {
                     await fetch(`http://127.0.0.1:5000/api/quota-enseignants/reset/session/${targetSession}`, {
@@ -120,7 +120,7 @@ const QuotaDispersionScreen = () => {
             quota.code_smartex_ens?.toString().includes(searchTerm);
 
         const matchGrade = gradeFilter === 'all' || quota.grade_code_ens === gradeFilter;
-        
+
         const matchSession = sessionFilter === 'all' || quota.id_session === sessionFilter;
 
         return matchSearch && matchGrade && matchSession;
