@@ -120,7 +120,8 @@ const SessionsScreen = () => {
       }
       setEditingSession(null)
       setShowModal(false)
-      await loadSessions() // Reload sessions
+      await loadSessions() // Reload local sessions list
+      await refreshSessions() // Refresh sessions in context so SessionSelector updates
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
       showNotification('Erreur', error.message || 'Impossible de sauvegarder la session', 'error')
