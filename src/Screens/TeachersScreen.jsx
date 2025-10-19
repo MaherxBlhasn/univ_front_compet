@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Download, Upload, Mail, CheckCircle, XCircle, RefreshCw, Edit2, Trash2, Info, Trash } from 'lucide-react';
 import Header from '@components/Layout/Header';
 import Button from '@components/Common/Button';
+import Pagination from '@components/Common/Pagination';
 import TeacherModal from '@components/Common/TeacherModal';
 import LoadingSpinner from '@components/Common/LoadingSpinner';
 import CSVImportModal from '@components/Common/CSVImportModal';
@@ -24,6 +25,10 @@ const TeachersScreen = () => {
     const [deleteConfirm, setDeleteConfirm] = useState(null)
     const [deleteAllConfirm, setDeleteAllConfirm] = useState(false)
     const [showImportModal, setShowImportModal] = useState(false)
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(25)
 
     // Couleurs pour chaque grade
     const getGradeColor = (gradeCode) => {
@@ -111,6 +116,27 @@ const TeachersScreen = () => {
         
         return matchSearch && matchGrade && matchSurveillance
     })
+
+    // Pagination calculations
+    const totalItems = filteredTeachers.length
+    const totalPages = Math.ceil(totalItems / itemsPerPage)
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    const paginatedTeachers = filteredTeachers.slice(startIndex, endIndex)
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchTerm, gradeFilter, surveillanceFilter])
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page)
+    }
+
+    const handleItemsPerPageChange = (items) => {
+        setItemsPerPage(items)
+        setCurrentPage(1) // Reset to first page when changing items per page
+    }
 
     const handleToggleSurveillance = async (code_smartex_ens) => {
         const teacher = teachers.find(t => t.code_smartex_ens === code_smartex_ens)
@@ -448,6 +474,20 @@ const TeachersScreen = () => {
                 </div>
 
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {/* Pagination */}
+                    {filteredTeachers.length > 0 && (
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={handlePageChange}
+                            onItemsPerPageChange={handleItemsPerPageChange}
+                            showItemsPerPage={true}
+                            itemsPerPageOptions={[10, 25, 50, 100]}
+                        />
+                    )}
+
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-gray-50 border-b border-gray-200">
@@ -461,7 +501,7 @@ const TeachersScreen = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {filteredTeachers.map((teacher, index) => (
+                                {paginatedTeachers.map((teacher, index) => (
                                     <tr key={teacher.code_smartex_ens} className="hover:bg-blue-50/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">

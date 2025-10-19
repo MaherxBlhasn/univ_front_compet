@@ -5,6 +5,7 @@ import Button from '@components/Common/Button'
 import LoadingSpinner from '@components/Common/LoadingSpinner'
 import CreneauModal from '@components/Common/CreneauModal'
 import CSVImportModal from '@components/Common/CSVImportModal'
+import Pagination from '@components/Common/Pagination'
 import { exportToCSV, showNotification } from '../utils/exports'
 import { notifyDataDeleted } from '../utils/events'
 import { useSession } from '../contexts/SessionContext'
@@ -30,6 +31,8 @@ const PlanningScreen = () => {
   const [filterDate, setFilterDate] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [showImportModal, setShowImportModal] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
 
   // Charger les créneaux depuis l'API
   useEffect(() => {
@@ -339,6 +342,29 @@ const PlanningScreen = () => {
   const groupedCreneaux = groupByDate(filteredCreneaux)
   const dates = Object.keys(groupedCreneaux).sort()
 
+  // Pagination calculations
+  const totalItems = filteredCreneaux.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedCreneaux = filteredCreneaux.slice(startIndex, endIndex)
+  const paginatedGroupedCreneaux = groupByDate(paginatedCreneaux)
+  const paginatedDates = Object.keys(paginatedGroupedCreneaux).sort()
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterDate, searchTerm])
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1)
+  }
+
   // Obtenir toutes les dates uniques des créneaux (pour le filtre)
   // Normaliser TOUTES les dates pour éviter les doublons (DD/MM/YYYY vs YYYY-MM-DD)
   const allDates = [...new Set(creneaux.map(c => normalizeDate(c.dateExam)).filter(Boolean))].sort()
@@ -567,6 +593,22 @@ const PlanningScreen = () => {
 
       {/* Liste des créneaux */}
       <main className="flex-1 overflow-y-auto p-6">
+        {/* Pagination */}
+        {filteredCreneaux.length > 0 && (
+          <div className="mb-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              showItemsPerPage={true}
+              itemsPerPageOptions={[10, 25, 50, 100]}
+            />
+          </div>
+        )}
+
         {filteredCreneaux.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-96">
             <Calendar size={64} className="text-gray-300 mb-4" />
@@ -583,7 +625,7 @@ const PlanningScreen = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {dates.map((date) => (
+            {paginatedDates.map((date) => (
               <div key={date} className="bg-white rounded-lg shadow-sm border border-gray-200">
                 {/* En-tête de date */}
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 rounded-t-lg">
@@ -591,11 +633,11 @@ const PlanningScreen = () => {
                     <div className="flex items-center gap-3 text-white">
                       <Calendar size={24} />
                       <div>
-                        <p className="text-lg font-bold">
+                        <p className="text-2xl font-bold">
                           {formatDate(date)}
                         </p>
                         <p className="text-sm text-blue-100">
-                          {groupedCreneaux[date].length} créneau(x)
+                          {paginatedGroupedCreneaux[date].length} créneau(x)
                         </p>
                       </div>
                     </div>
@@ -604,7 +646,7 @@ const PlanningScreen = () => {
 
                 {/* Liste des créneaux pour cette date */}
                 <div className="p-4 space-y-3">
-                  {groupedCreneaux[date]
+                  {paginatedGroupedCreneaux[date]
                     .sort((a, b) => a.h_debut.localeCompare(b.h_debut))
                     .map((creneau) => (
                       <div

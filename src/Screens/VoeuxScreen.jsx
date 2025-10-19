@@ -7,17 +7,15 @@ import {
     Search,
     Edit2,
     Trash2,
-    Calendar,
-    Users,
-    TrendingUp,
-    Trash,
-    RefreshCw,
+    Calendar, Trash,
+    RefreshCw
 } from 'lucide-react';
 import Header from '@components/Layout/Header';
 import Button from '@components/Common/Button';
 import LoadingSpinner from '@components/Common/LoadingSpinner';
 import VoeuxModal from '@components/Common/VoeuxModal';
 import CSVImportModal from '@components/Common/CSVImportModal';
+import Pagination from '@components/Common/Pagination';
 import { showNotification, exportToCSV } from '../utils/exports';
 import { notifyDataDeleted } from '../utils/events';
 import { fetchVoeux, createVoeu, updateVoeu, deleteVoeu, uploadAndImportFile, deleteAllVoeux } from '../services/api';
@@ -54,6 +52,8 @@ const VoeuxScreen = () => {
     const [editingVoeu, setEditingVoeu] = useState(null)
     const [deleteConfirm, setDeleteConfirm] = useState(null)
     const [deleteAllConfirm, setDeleteAllConfirm] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(25)
 
     // Charger les vœux depuis l'API when session changes
     useEffect(() => {
@@ -236,6 +236,27 @@ const VoeuxScreen = () => {
 
     const teachersWithVoeux = Object.values(groupedByTeacher)
 
+    // Pagination calculations
+    const totalItems = teachersWithVoeux.length
+    const totalPages = Math.ceil(totalItems / itemsPerPage)
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    const paginatedTeachers = teachersWithVoeux.slice(startIndex, endIndex)
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchTerm])
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page)
+    }
+
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage)
+        setCurrentPage(1)
+    }
+
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center bg-gray-50">
@@ -371,6 +392,22 @@ const VoeuxScreen = () => {
 
             {/* Content */}
             <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                {/* Pagination */}
+                {teachersWithVoeux.length > 0 && (
+                    <div className="mb-4">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={handlePageChange}
+                            onItemsPerPageChange={handleItemsPerPageChange}
+                            showItemsPerPage={true}
+                            itemsPerPageOptions={[10, 25, 50, 100]}
+                        />
+                    </div>
+                )}
+
                 {teachersWithVoeux.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-96">
                         <Heart size={64} className="text-gray-300 mb-4" />
@@ -392,7 +429,7 @@ const VoeuxScreen = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {teachersWithVoeux.map(teacher => (
+                        {paginatedTeachers.map(teacher => (
                             <div
                                 key={teacher.code}
                                 className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"

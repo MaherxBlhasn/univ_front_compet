@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Search, MapPin, Edit, Trash2, CheckCircle, XCircle, Monitor, Users, RefreshCw } from 'lucide-react'
 import Header from '@components/Layout/Header'
 import Button from '@components/Common/Button'
 import Card from '@components/Common/Card'
 import RoomModal from '@components/Common/RoomModal'
+import Pagination from '@components/Common/Pagination'
 import { MOCK_ROOMS } from '../data/mockData'
-import { showNotification } from '../utils/exports';
+import { showNotification } from '../utils/exports'
 
 const RoomsScreen = () => {
   const [rooms, setRooms] = useState(MOCK_ROOMS)
@@ -13,6 +14,8 @@ const RoomsScreen = () => {
   const [editingRoom, setEditingRoom] = useState(null)
   const [filter, setFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
 
   const getTypeColor = (type) => {
     const colors = {
@@ -34,6 +37,27 @@ const RoomsScreen = () => {
     total: rooms.length,
     available: rooms.filter(r => r.disponible).length,
     unavailable: rooms.filter(r => !r.disponible).length
+  }
+
+  // Pagination calculations
+  const totalItems = filteredRooms.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedRooms = filteredRooms.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filter, searchTerm])
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1)
   }
 
   // Ajouter/modifier une salle
@@ -170,8 +194,24 @@ const RoomsScreen = () => {
 
       {/* Rooms Grid */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        {/* Pagination */}
+        {filteredRooms.length > 0 && (
+          <div className="mb-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              showItemsPerPage={true}
+              itemsPerPageOptions={[10, 25, 50, 100]}
+            />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-          {filteredRooms.map((room) => (
+          {paginatedRooms.map((room) => (
             <Card key={room.id} className="hover:shadow-xl transition-all duration-200">
               <div className="space-y-4">
                 {/* Header */}
