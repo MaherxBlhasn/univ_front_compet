@@ -4,6 +4,7 @@ import { useSession } from '../contexts/SessionContext';
 import Header from '@components/Layout/Header';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import Button from '../components/Common/Button';
+import Pagination from '@components/Common/Pagination';
 import { getInitials } from '../utils/formatters';
 
 const AbsenceResponsablesScreen = () => {
@@ -15,6 +16,10 @@ const AbsenceResponsablesScreen = () => {
     const [surveillanceFilter, setSurveillanceFilter] = useState('all');
     const [showGradeDropdown, setShowGradeDropdown] = useState(false);
     const [showSurveillanceDropdown, setShowSurveillanceDropdown] = useState(false);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
 
     // États pour les PDFs
     const [pdfFiles, setPdfFiles] = useState([]);
@@ -305,6 +310,27 @@ const AbsenceResponsablesScreen = () => {
             // Ensuite trier par nom alphabétique
             return a.nom?.localeCompare(b.nom) || 0;
         });
+
+    // Pagination calculations
+    const totalItems = filteredResponsables.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedResponsables = filteredResponsables.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, gradeFilter, surveillanceFilter]);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1);
+    };
 
     // Statistiques
     const stats = {
@@ -602,6 +628,22 @@ const AbsenceResponsablesScreen = () => {
 
                 {/* Table Section */}
                 <div className="p-6 bg-gray-50">
+                    {/* Pagination */}
+                    {filteredResponsables.length > 0 && (
+                        <div className="mb-4">
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                totalItems={totalItems}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={handlePageChange}
+                                onItemsPerPageChange={handleItemsPerPageChange}
+                                showItemsPerPage={true}
+                                itemsPerPageOptions={[10, 25, 50, 100]}
+                            />
+                        </div>
+                    )}
+
                     {/* Table */}
                     <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                         <div className="overflow-x-auto">
@@ -643,7 +685,7 @@ const AbsenceResponsablesScreen = () => {
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredResponsables.map((resp) => (
+                                        paginatedResponsables.map((resp) => (
                                             <tr
                                                 key={resp.id}
                                                 className={`transition-colors ${resp.participe_surveillance

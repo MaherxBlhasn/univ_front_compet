@@ -6,6 +6,7 @@ import Header from '@components/Layout/Header';
 import Button from '@components/Common/Button';
 import SwapConfirmationModal from '../components/Common/SwapConfirmationModal';
 import Modal from '../components/Common/Modal';
+import Pagination from '@components/Common/Pagination';
 import { getInitials } from '../utils/formatters';
 
 const AffectationsListScreen = () => {
@@ -27,6 +28,7 @@ const AffectationsListScreen = () => {
   const [selectedForSwap, setSelectedForSwap] = useState(null); // For click-to-swap alternative
   const [modalSource, setModalSource] = useState(null); // Stable copy for modal
   const [modalTarget, setModalTarget] = useState(null); // Stable copy for modal
+  const [groupPagination, setGroupPagination] = useState({}); // Pagination state for each group
   
   // Refs for date sections to enable scrolling
   const dateRefs = useRef({});
@@ -450,6 +452,54 @@ const AffectationsListScreen = () => {
     return grouped;
   };
 
+  // Initialize pagination for each group
+  const initializeGroupPagination = (groupKeys) => {
+    const newPagination = {};
+    groupKeys.forEach(key => {
+      if (!groupPagination[key]) {
+        newPagination[key] = { currentPage: 1, itemsPerPage: 10 };
+      } else {
+        newPagination[key] = groupPagination[key];
+      }
+    });
+    return newPagination;
+  };
+
+  // Get paginated data for a specific group
+  const getPaginatedGroupData = (groupKey, groupData) => {
+    const pagination = groupPagination[groupKey] || { currentPage: 1, itemsPerPage: 10 };
+    const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage;
+    const endIndex = startIndex + pagination.itemsPerPage;
+    return groupData.slice(startIndex, endIndex);
+  };
+
+  // Handle page change for a specific group
+  const handleGroupPageChange = (groupKey, newPage) => {
+    setGroupPagination(prev => ({
+      ...prev,
+      [groupKey]: {
+        ...prev[groupKey],
+        currentPage: newPage
+      }
+    }));
+  };
+
+  // Handle items per page change for a specific group
+  const handleGroupItemsPerPageChange = (groupKey, newItemsPerPage) => {
+    setGroupPagination(prev => ({
+      ...prev,
+      [groupKey]: {
+        currentPage: 1,
+        itemsPerPage: newItemsPerPage
+      }
+    }));
+  };
+
+  // Reset group pagination when groupBy changes
+  useEffect(() => {
+    setGroupPagination({});
+  }, [groupBy, searchQuery]);
+
   // Get all unique dates for quick access
   const getAllDates = () => {
     if (groupBy !== 'jour') return [];
@@ -559,10 +609,16 @@ const AffectationsListScreen = () => {
   }
 
   const grouped = groupedAffectations();
-  const groupKeys = Object.keys(grouped);
+  const groupKeys = Object.keys(grouped).sort();
+
+  // Initialize pagination for all groups
+  useEffect(() => {
+    const initialized = initializeGroupPagination(groupKeys);
+    setGroupPagination(initialized);
+  }, [groupKeys.join(',')]);
 
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Header */}
       <Header
         title="Liste des Affectations"
@@ -784,13 +840,13 @@ const AffectationsListScreen = () => {
       {/* Main Content */}
       <div 
         ref={scrollContainerRef} 
-        className="flex-1 overflow-auto bg-gray-50 p-8"
+        className="flex-1 overflow-auto bg-gray-50 p-8 w-full"
       >
         {loading ? (
           /* Skeleton Loading State */
-          <div className="space-y-6">
+          <div className="space-y-6 max-w-full">
             {[1, 2].map((groupIndex) => (
-              <div key={groupIndex} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-pulse">
+              <div key={groupIndex} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-pulse w-full">
                 {/* Group Header Skeleton */}
                 <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
@@ -801,7 +857,7 @@ const AffectationsListScreen = () => {
 
                 {/* Table Skeleton */}
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="min-w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-3 text-left">
@@ -890,12 +946,12 @@ const AffectationsListScreen = () => {
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6 max-w-full">
             {groupKeys.map(groupKey => (
               <div 
                 key={groupKey} 
                 ref={el => dateRefs.current[groupKey] = el}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+                className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden w-full"
               >
                 {/* Group Header */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
@@ -908,7 +964,7 @@ const AffectationsListScreen = () => {
                 </div>
 
                 {/* Drag & Drop Instructions */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-3 mb-4">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-3 mx-4 mt-4 mb-4">
                   <div className="flex items-center gap-3 mb-2">
                     <svg className="w-5 h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -930,39 +986,55 @@ const AffectationsListScreen = () => {
                   </div>
                 </div>
 
+                {/* Pagination for this group */}
+                {grouped[groupKey].length > 0 && (
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                    <Pagination
+                      currentPage={groupPagination[groupKey]?.currentPage || 1}
+                      totalPages={Math.ceil(grouped[groupKey].length / (groupPagination[groupKey]?.itemsPerPage || 10))}
+                      totalItems={grouped[groupKey].length}
+                      itemsPerPage={groupPagination[groupKey]?.itemsPerPage || 10}
+                      onPageChange={(page) => handleGroupPageChange(groupKey, page)}
+                      onItemsPerPageChange={(items) => handleGroupItemsPerPageChange(groupKey, items)}
+                      showItemsPerPage={true}
+                      itemsPerPageOptions={[5, 10, 25, 50]}
+                    />
+                  </div>
+                )}
+
                 {/* Affectations Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full table-auto">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Code
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Enseignant
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Date & Heure
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Séance
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Salle
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Session
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Enseignant Responsable
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                           Action
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {grouped[groupKey].map((affectation) => {
+                      {getPaginatedGroupData(groupKey, grouped[groupKey]).map((affectation) => {
                         const isValidDropTarget = draggedProf && canSwap(draggedProf, affectation);
                         const isDragging = draggedProf?.affectation_id === affectation.affectation_id;
                         const isSelected = selectedForSwap?.affectation_id === affectation.affectation_id;

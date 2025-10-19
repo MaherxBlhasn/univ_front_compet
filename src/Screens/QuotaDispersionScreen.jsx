@@ -4,6 +4,7 @@ import { useSession } from '../contexts/SessionContext';
 import Header from '@components/Layout/Header';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import Button from '../components/Common/Button';
+import Pagination from '@components/Common/Pagination';
 import { fetchGrades } from '../services/api';
 import { getInitials } from '../utils/formatters';
 
@@ -19,6 +20,10 @@ const QuotaDispersionScreen = () => {
     const [gradesArray, setGradesArray] = useState([]);
     const [sessionsArray, setSessionsArray] = useState([]);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
 
     const loadQuotas = async () => {
         try {
@@ -125,6 +130,27 @@ const QuotaDispersionScreen = () => {
 
         return matchSearch && matchGrade && matchSession;
     });
+
+    // Pagination calculations
+    const totalItems = filteredQuotas.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedQuotas = filteredQuotas.slice(startIndex, endIndex);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, gradeFilter]);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const handleItemsPerPageChange = (items) => {
+        setItemsPerPage(items);
+        setCurrentPage(1);
+    };
 
     // Statistiques
     const stats = {
@@ -288,6 +314,22 @@ const QuotaDispersionScreen = () => {
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
 
+                {/* Pagination */}
+                {filteredQuotas.length > 0 && (
+                    <div className="mb-4">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={handlePageChange}
+                            onItemsPerPageChange={handleItemsPerPageChange}
+                            showItemsPerPage={true}
+                            itemsPerPageOptions={[10, 25, 50, 100]}
+                        />
+                    </div>
+                )}
+
                 {/* Quotas Table */}
                 {filteredQuotas.length > 0 ? (
                     <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
@@ -325,7 +367,7 @@ const QuotaDispersionScreen = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredQuotas.map((quota) => (
+                                    {paginatedQuotas.map((quota) => (
                                         <tr key={`${quota.code_smartex_ens}-${quota.id_session}`} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className="text-sm font-medium text-gray-900">{quota.code_smartex_ens}</span>

@@ -9,6 +9,7 @@ import Modal from '@components/Common/Modal';
 import SessionModal from '@components/Common/SessionModal';
 import SessionDetailsModal from '@components/Common/SessionDetailsModal';
 import LoadingSpinner from '@components/Common/LoadingSpinner';
+import Pagination from '@components/Common/Pagination';
 import { formatDate } from '../utils/formatters';
 import { exportToCSV, showNotification } from '../utils/exports';
 import { fetchSessions, createSession, updateSession, deleteSession } from '../services/api';
@@ -25,6 +26,8 @@ const SessionsScreen = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
 
   // Load sessions from backend
   useEffect(() => {
@@ -81,6 +84,27 @@ const SessionsScreen = () => {
     const matchesType = !hasTypes || typeFilter === 'all' || session.type_session === typeFilter
     return matchesSearch && matchesType
   })
+
+  // Pagination calculations
+  const totalItems = filteredSessions.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedSessions = filteredSessions.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, typeFilter])
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+  }
+
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage)
+    setCurrentPage(1)
+  }
 
   // Add/Update session
   const handleSaveSession = async (sessionData) => {
@@ -231,8 +255,24 @@ const SessionsScreen = () => {
 
       {/* Sessions Grid */}
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        {/* Pagination */}
+        {filteredSessions.length > 0 && (
+          <div className="mb-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              showItemsPerPage={true}
+              itemsPerPageOptions={[10, 25, 50, 100]}
+            />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-          {filteredSessions.map((session) => {
+          {paginatedSessions.map((session) => {
             const hasAllData = session.AU && session.Semestre && session.type_session
 
             return (
