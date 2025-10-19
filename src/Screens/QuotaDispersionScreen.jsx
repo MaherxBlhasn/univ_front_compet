@@ -13,21 +13,29 @@ const QuotaDispersionScreen = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [gradeFilter, setGradeFilter] = useState('all');
+    const [sessionFilter, setSessionFilter] = useState('all');
     const [showGradeDropdown, setShowGradeDropdown] = useState(false);
+    const [showSessionDropdown, setShowSessionDropdown] = useState(false);
     const [gradesArray, setGradesArray] = useState([]);
+    const [sessionsArray, setSessionsArray] = useState([]);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
 
     const loadQuotas = async () => {
-        if (!currentSession?.id_session) {
-            setLoading(false);
-            return;
-        }
-
         try {
             setLoading(true);
-            const response = await fetch(`http://127.0.0.1:5000/api/quota-enseignants?id_session=${currentSession.id_session}`);
+            // Charger les quotas de toutes les sessions
+            const response = await fetch(`http://127.0.0.1:5000/api/quota-enseignants`);
             const data = await response.json();
             setQuotas(data);
+            
+            // Extraire les sessions uniques des quotas
+            const uniqueSessions = [...new Set(data.map(q => q.id_session))].filter(Boolean);
+            const sessionsData = uniqueSessions.map(id => ({
+                id_session: id,
+                // Trouver le libellé de la session depuis les données
+                libelle: data.find(q => q.id_session === id)?.libelle_session || `Session ${id}`
+            }));
+            setSessionsArray(sessionsData);
         } catch (error) {
             console.error('Erreur lors du chargement des quotas:', error);
         } finally {
@@ -46,10 +54,13 @@ const QuotaDispersionScreen = () => {
             if (showGradeDropdown && !event.target.closest('.grade-dropdown-container')) {
                 setShowGradeDropdown(false);
             }
+            if (showSessionDropdown && !event.target.closest('.session-dropdown-container')) {
+                setShowSessionDropdown(false);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showGradeDropdown]);
+    }, [showGradeDropdown, showSessionDropdown]);
 
     const loadGrades = async () => {
         try {
@@ -70,14 +81,30 @@ const QuotaDispersionScreen = () => {
 
     const confirmAction = async () => {
         try {
+            const targetSession = sessionFilter === 'all' ? null : sessionFilter;
+            
             if (deleteConfirm.action === 'resetAll') {
-                await fetch(`http://127.0.0.1:5000/api/quota-enseignants/reset/session/${currentSession.id_session}`, {
-                    method: 'PUT'
-                });
+                if (targetSession) {
+                    await fetch(`http://127.0.0.1:5000/api/quota-enseignants/reset/session/${targetSession}`, {
+                        method: 'PUT'
+                    });
+                } else {
+                    // Réinitialiser toutes les sessions
+                    await fetch(`http://127.0.0.1:5000/api/quota-enseignants/reset`, {
+                        method: 'PUT'
+                    });
+                }
             } else if (deleteConfirm.action === 'deleteAll') {
-                await fetch(`http://127.0.0.1:5000/api/quota-enseignants/session/${currentSession.id_session}`, {
-                    method: 'DELETE'
-                });
+                if (targetSession) {
+                    await fetch(`http://127.0.0.1:5000/api/quota-enseignants/session/${targetSession}`, {
+                        method: 'DELETE'
+                    });
+                } else {
+                    // Supprimer toutes les sessions
+                    await fetch(`http://127.0.0.1:5000/api/quota-enseignants`, {
+                        method: 'DELETE'
+                    });
+                }
             }
             await loadQuotas();
             setDeleteConfirm(null);
@@ -93,8 +120,10 @@ const QuotaDispersionScreen = () => {
             quota.code_smartex_ens?.toString().includes(searchTerm);
 
         const matchGrade = gradeFilter === 'all' || quota.grade_code_ens === gradeFilter;
+        
+        const matchSession = sessionFilter === 'all' || quota.id_session === sessionFilter;
 
-        return matchSearch && matchGrade;
+        return matchSearch && matchGrade && matchSession;
     });
 
     // Statistiques
@@ -110,18 +139,6 @@ const QuotaDispersionScreen = () => {
         return (
             <div className="flex-1 flex items-center justify-center bg-gray-50">
                 <LoadingSpinner message="Chargement des quotas..." />
-            </div>
-        );
-    }
-
-    if (!currentSession) {
-        return (
-            <div className="flex-1 flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                    <Users className="mx-auto mb-4 text-gray-400" size={64} />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Aucune session sélectionnée</h3>
-                    <p className="text-gray-600">Veuillez sélectionner une session pour voir les quotas</p>
-                </div>
             </div>
         );
     }
@@ -158,6 +175,44 @@ const QuotaDispersionScreen = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
+                    </div>
+
+                    {/* Session Filter Dropdown */}
+                    <div className="relative session-dropdown-container">
+                        <button
+                            onClick={() => setShowSessionDropdown(!showSessionDropdown)}
+                            className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white hover:border-gray-500 transition-colors whitespace-nowrap"
+                        >
+                            <span>{sessionFilter === 'all' ? 'Toutes les sessions' : `Session ${sessionFilter}`}</span>
+                            <ChevronDown size={16} className={`transition-transform ${showSessionDropdown ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {showSessionDropdown && (
+                            <div className="absolute top-full mt-2 right-0 bg-white border-2 border-gray-300 rounded-lg shadow-xl z-50 py-2 min-w-[200px]">
+                                <button
+                                    onClick={() => {
+                                        setSessionFilter('all');
+                                        setShowSessionDropdown(false);
+                                    }}
+                                    className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors text-sm font-medium ${sessionFilter === 'all' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}
+                                >
+                                    Toutes les sessions
+                                </button>
+                                <div className="border-t border-gray-200 my-1"></div>
+                                {sessionsArray.map(session => (
+                                    <button
+                                        key={session.id_session}
+                                        onClick={() => {
+                                            setSessionFilter(session.id_session);
+                                            setShowSessionDropdown(false);
+                                        }}
+                                        className={`w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors text-sm ${sessionFilter === session.id_session ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
+                                    >
+                                        {session.libelle}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Grade Filter Dropdown */}
@@ -291,7 +346,9 @@ const QuotaDispersionScreen = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm text-gray-700">{quota.libelle_session || currentSession.libelle_session}</span>
+                                                <span className="text-sm text-gray-700">
+                                                    {quota.libelle_session || `Session ${quota.id_session}`}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 text-center whitespace-nowrap">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getGradeColor(quota.grade_code_ens)
