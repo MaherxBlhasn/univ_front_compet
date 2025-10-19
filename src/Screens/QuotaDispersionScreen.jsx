@@ -87,7 +87,7 @@ const QuotaDispersionScreen = () => {
     const confirmAction = async () => {
         try {
             const targetSession = sessionFilter === 'all' ? null : sessionFilter;
-
+            console.log('Action confirmée:', deleteConfirm.action, 'Session cible:', targetSession);
             if (deleteConfirm.action === 'resetAll') {
                 if (targetSession) {
                     await fetch(`http://127.0.0.1:5000/api/quota-enseignants/reset/session/${targetSession}`, {
@@ -95,7 +95,7 @@ const QuotaDispersionScreen = () => {
                     });
                 } else {
                     // Réinitialiser toutes les sessions
-                    await fetch(`http://127.0.0.1:5000/api/quota-enseignants/reset`, {
+                    await fetch(`http://127.0.0.1:5000/api/quota-enseignants/reset/all`, {
                         method: 'PUT'
                     });
                 }
@@ -106,7 +106,7 @@ const QuotaDispersionScreen = () => {
                     });
                 } else {
                     // Supprimer toutes les sessions
-                    await fetch(`http://127.0.0.1:5000/api/quota-enseignants`, {
+                    await fetch(`http://127.0.0.1:5000/api/quota-enseignants/all`, {
                         method: 'DELETE'
                     });
                 }
