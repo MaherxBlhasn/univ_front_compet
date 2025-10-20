@@ -441,6 +441,28 @@ export const deleteAllAffectations = async (id_session) => {
   })
 }
 
+// Envoyer les convocations par email
+export const sendConvocationsByEmail = async (sessionId, filenames) => {
+  const response = await fetch(
+    `${API_CONFIG.baseURL}/api/email/send-convocations`,
+    {
+      method: 'POST',
+      headers: API_CONFIG.headers,
+      body: JSON.stringify({
+        session_id: sessionId,
+        filenames: filenames
+      })
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || `Failed to send convocations by email: ${response.status}`)
+  }
+
+  return await response.json()
+}
+
 // ==================== STATISTICS ====================
 
 export const fetchSessionStatistics = async (id_session) => {
@@ -537,6 +559,7 @@ export default {
   updateAffectation,
   permuterAffectations,
   deleteAllAffectations,
+  sendConvocationsByEmail,
   
   // Statistics
   fetchSessionStatistics,
