@@ -608,19 +608,19 @@ const AbsenceResponsablesScreen = () => {
                 <div className="bg-white border-b border-gray-200 px-6 py-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="p-4 bg-blue-50 rounded-lg">
-                            <p className="text-sm text-blue-600 font-medium">Total Responsables</p>
+                            <p className="text-sm text-blue-600 font-medium">Total Responsables Absents</p>
                             <p className="text-2xl font-bold text-blue-900">{stats.total}</p>
                         </div>
                         <div className="p-4 bg-green-50 rounded-lg">
-                            <p className="text-sm text-green-600 font-medium">Responsables Surveillants</p>
+                            <p className="text-sm text-green-600 font-medium">Responsables Surveillants Absents</p>
                             <p className="text-2xl font-bold text-green-900">{stats.surveillants}</p>
                         </div>
-                        <div className="p-4 bg-orange-50 rounded-lg">
-                            <p className="text-sm text-orange-600 font-medium">Responsables Non Surveillants</p>
+                        <div className="p-4 bg-red-50 rounded-lg">
+                            <p className="text-sm text-red-600 font-medium">Responsables Non Surveillants Absents</p>
                             <p className="text-2xl font-bold text-orange-900">{stats.nonSurveillants}</p>
                         </div>
-                        <div className="p-4 bg-red-50 rounded-lg">
-                            <p className="text-sm text-red-600 font-medium">Total Jours Absents</p>
+                        <div className="p-4 bg-orange-50 rounded-lg">
+                            <p className="text-sm text-orange-600 font-medium">Total Jours Absents</p>
                             <p className="text-2xl font-bold text-red-900">{stats.totalJoursAbsents}</p>
                         </div>
                     </div>
