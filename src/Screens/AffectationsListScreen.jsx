@@ -29,7 +29,7 @@ const AffectationsListScreen = () => {
   const [modalSource, setModalSource] = useState(null); // Stable copy for modal
   const [modalTarget, setModalTarget] = useState(null); // Stable copy for modal
   const [groupPagination, setGroupPagination] = useState({}); // Pagination state for each group
-  
+
   // Refs for date sections to enable scrolling
   const dateRefs = useRef({});
   const scrollContainerRef = useRef(null);
@@ -51,7 +51,7 @@ const AffectationsListScreen = () => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 0;
     }
-    
+
     // Reset horizontal scroll for quick access sections
     setTimeout(() => {
       if (dateScrollRef.current) {
@@ -133,41 +133,75 @@ const AffectationsListScreen = () => {
     if (!aff1 || !aff2) {
       return { valid: false, reason: 'Données manquantes' };
     }
-    
+
     // Same affectation
     if (aff1.affectation_id === aff2.affectation_id) {
       return { valid: false, reason: 'Impossible d\'échanger une affectation avec elle-même' };
     }
-    
+
     // Same teacher
     if (aff1.code_smartex_ens === aff2.code_smartex_ens) {
-      return { 
-        valid: false, 
-        reason: `Impossible d'échanger : même enseignant (${getTeacherName(aff1.code_smartex_ens)})` 
+      return {
+        valid: false,
+        reason: `Impossible d'échanger : même enseignant (${getTeacherName(aff1.code_smartex_ens)})`
       };
     }
-    
+
     // Different sessions
     if (aff1.id_session !== aff2.id_session) {
-      return { 
-        valid: false, 
-        reason: 'Impossible d\'échanger : les affectations ne sont pas dans la même session' 
+      return {
+        valid: false,
+        reason: 'Impossible d\'échanger : les affectations ne sont pas dans la même session'
       };
     }
-    
-    // Same room AND same time slot
+
+    // RÈGLE 1: Interdire la permutation de deux enseignants dans la même salle au même horaire
+    // Si les deux enseignants surveillent dans la même salle au même créneau horaire, la permutation n'a pas de sens
     if (
       aff1.cod_salle === aff2.cod_salle &&
       aff1.date_examen === aff2.date_examen &&
       aff1.h_debut === aff2.h_debut &&
       aff1.h_fin === aff2.h_fin
     ) {
-      return { 
-        valid: false, 
-        reason: `Impossible d'échanger : même salle (${aff1.cod_salle}) et même créneau (${aff1.date_examen} ${aff1.h_debut}-${aff1.h_fin})` 
+      return {
+        valid: false,
+        reason: `Impossible d'échanger : les deux enseignants surveillent dans la même salle (${aff1.cod_salle}) au même créneau (${aff1.date_examen} ${aff1.h_debut}-${aff1.h_fin})`
       };
     }
-    
+
+    // RÈGLE 2: Vérifier que l'enseignant 1 ne surveille pas déjà au créneau de l'enseignant 2
+    // Rechercher si aff1.code_smartex_ens a déjà une affectation au même créneau que aff2
+    const enseignant1ConflictWithTarget = affectations.find(aff =>
+      aff.affectation_id !== aff1.affectation_id && // Exclure l'affectation source
+      aff.code_smartex_ens === aff1.code_smartex_ens && // Même enseignant que source
+      aff.date_examen === aff2.date_examen && // Même date que cible
+      aff.h_debut === aff2.h_debut && // Même heure début que cible
+      aff.h_fin === aff2.h_fin // Même heure fin que cible
+    );
+
+    if (enseignant1ConflictWithTarget) {
+      return {
+        valid: false,
+        reason: `Impossible d'échanger : ${getTeacherName(aff1.code_smartex_ens)} surveille déjà au créneau ${aff2.date_examen} ${aff2.h_debut}-${aff2.h_fin} (salle ${enseignant1ConflictWithTarget.cod_salle})`
+      };
+    }
+
+    // RÈGLE 2 (inverse): Vérifier que l'enseignant 2 ne surveille pas déjà au créneau de l'enseignant 1
+    const enseignant2ConflictWithTarget = affectations.find(aff =>
+      aff.affectation_id !== aff2.affectation_id && // Exclure l'affectation cible
+      aff.code_smartex_ens === aff2.code_smartex_ens && // Même enseignant que cible
+      aff.date_examen === aff1.date_examen && // Même date que source
+      aff.h_debut === aff1.h_debut && // Même heure début que source
+      aff.h_fin === aff1.h_fin // Même heure fin que source
+    );
+
+    if (enseignant2ConflictWithTarget) {
+      return {
+        valid: false,
+        reason: `Impossible d'échanger : ${getTeacherName(aff2.code_smartex_ens)} surveille déjà au créneau ${aff1.date_examen} ${aff1.h_debut}-${aff1.h_fin} (salle ${enseignant2ConflictWithTarget.cod_salle})`
+      };
+    }
+
     return { valid: true };
   };
 
@@ -178,16 +212,16 @@ const AffectationsListScreen = () => {
 
   // Handle drop - show confirmation modal
   const handleDrop = (targetAffectation) => {
-    console.log('🎯 handleDrop called', { 
-      draggedProf: draggedProf?.code_smartex_ens, 
-      target: targetAffectation?.code_smartex_ens 
+    console.log('🎯 handleDrop called', {
+      draggedProf: draggedProf?.code_smartex_ens,
+      target: targetAffectation?.code_smartex_ens
     });
-    
+
     if (!draggedProf || !targetAffectation) {
       console.warn('⚠️ Invalid drop: missing draggedProf or targetAffectation');
       return;
     }
-    
+
     if (draggedProf.affectation_id === targetAffectation.affectation_id) {
       console.warn('⚠️ Cannot swap with self');
       return;
@@ -196,40 +230,40 @@ const AffectationsListScreen = () => {
     // Validate swap with detailed reason
     const validation = getSwapValidation(draggedProf, targetAffectation);
     console.log('🔍 Validation result:', validation);
-    
+
     if (!validation.valid) {
       console.warn('⚠️ Swap not allowed:', validation.reason);
       console.log('📢 Setting error message and showing toast');
-      
+
       // Show detailed error message
       setErrorMessage(validation.reason);
       setShowError(true);
-      
-      console.log('✅ Error state set:', { 
-        errorMessage: validation.reason, 
-        showError: true 
+
+      console.log('✅ Error state set:', {
+        errorMessage: validation.reason,
+        showError: true
       });
-      
+
       setTimeout(() => {
         console.log('⏱️ Auto-hiding error toast');
         setShowError(false);
       }, 5000);
-      
+
       // Clear drag state
       setDraggedProf(null);
       return;
     }
 
-    console.log('✅ Opening swap modal', { 
-      from: draggedProf.code_smartex_ens, 
-      to: targetAffectation.code_smartex_ens 
+    console.log('✅ Opening swap modal', {
+      from: draggedProf.code_smartex_ens,
+      to: targetAffectation.code_smartex_ens
     });
 
     // Store stable copies for modal to prevent glitching
     setModalSource(draggedProf);
     setModalTarget(targetAffectation);
     setSwapTarget(targetAffectation);
-    
+
     // Show modal after ensuring state is set
     setTimeout(() => {
       setShowSwapModal(true);
@@ -297,48 +331,48 @@ const AffectationsListScreen = () => {
   // Auto-scroll during drag - improved version
   const handleDragMove = (e) => {
     if (!scrollContainerRef.current || !draggedProf) return;
-    
+
     const container = scrollContainerRef.current;
     const rect = container.getBoundingClientRect();
     const scrollZone = 80; // pixels from edge to trigger scroll
     const scrollSpeed = 3; // Reduced from 10 to 3 for slower, smoother scroll
-    
+
     // Mouse position relative to viewport
     const mouseY = e.clientY;
-    
+
     // Determine if we should scroll and in which direction
     let shouldScrollUp = mouseY < rect.top + scrollZone && container.scrollTop > 0;
-    let shouldScrollDown = mouseY > rect.bottom - scrollZone && 
-                           container.scrollTop < container.scrollHeight - container.clientHeight;
-    
+    let shouldScrollDown = mouseY > rect.bottom - scrollZone &&
+      container.scrollTop < container.scrollHeight - container.clientHeight;
+
     // Stop scrolling if not in scroll zone
     if (!shouldScrollUp && !shouldScrollDown) {
       stopAutoScroll();
       return;
     }
-    
+
     // Start scrolling only if not already scrolling
     if (!isScrolling.current) {
       isScrolling.current = true;
-      
+
       const scroll = () => {
         if (!draggedProf || !scrollContainerRef.current) {
           stopAutoScroll();
           return;
         }
-        
+
         const container = scrollContainerRef.current;
-        
+
         if (shouldScrollUp && container.scrollTop > 0) {
           container.scrollTop -= scrollSpeed;
         } else if (shouldScrollDown && container.scrollTop < container.scrollHeight - container.clientHeight) {
           container.scrollTop += scrollSpeed;
         }
-        
+
         // Continue scrolling
         dragScrollInterval.current = requestAnimationFrame(scroll);
       };
-      
+
       scroll();
     }
   };
@@ -371,7 +405,7 @@ const AffectationsListScreen = () => {
         setSelectedForSwap(null);
         return;
       }
-      
+
       // Initiate swap
       setModalSource(selectedForSwap);
       setModalTarget(affectation);
@@ -388,7 +422,7 @@ const AffectationsListScreen = () => {
   const handleDeleteAll = async () => {
     try {
       setDeleting(true);
-      await deleteAllAffectations();
+      await deleteAllAffectations(currentSession?.id_session);
 
       // Close modal
       setShowDeleteAllModal(false);
@@ -404,7 +438,7 @@ const AffectationsListScreen = () => {
       setShowDeleteAllModal(false);
 
       // Show error notification
-      setErrorMessage(error.message || 'Erreur lors de la suppression');
+      setErrorMessage('Erreur lors de la suppression');
       setShowError(true);
 
       // Auto-hide after 5 seconds
@@ -503,7 +537,7 @@ const AffectationsListScreen = () => {
   // Get all unique dates for quick access
   const getAllDates = () => {
     if (groupBy !== 'jour') return [];
-    
+
     const dates = [...new Set(affectations.map(aff => aff.date_examen))].sort();
     return dates.map(date => {
       const jour = affectations.find(aff => aff.date_examen === date)?.jour;
@@ -519,7 +553,7 @@ const AffectationsListScreen = () => {
   // Get all unique enseignants for quick access
   const getAllEnseignants = () => {
     if (groupBy !== 'enseignant') return [];
-    
+
     const enseignantCodes = [...new Set(affectations.map(aff => aff.code_smartex_ens))].sort();
     return enseignantCodes.map(code => {
       const name = getTeacherName(code);
@@ -535,7 +569,7 @@ const AffectationsListScreen = () => {
   // Get all unique salles for quick access
   const getAllSalles = () => {
     if (groupBy !== 'salle') return [];
-    
+
     const salles = [...new Set(affectations.map(aff => aff.cod_salle || 'Sans salle'))].sort();
     return salles.map(salle => {
       return {
@@ -549,13 +583,13 @@ const AffectationsListScreen = () => {
   // Parse date from DD/MM/YYYY or YYYY-MM-DD format
   const parseDate = (dateString) => {
     if (!dateString) return null;
-    
+
     // Check if it's DD/MM/YYYY format
     if (dateString.includes('/')) {
       const [day, month, year] = dateString.split('/');
       return new Date(year, month - 1, day);
     }
-    
+
     // Otherwise try YYYY-MM-DD format
     return new Date(dateString);
   };
@@ -564,35 +598,35 @@ const AffectationsListScreen = () => {
   const scrollToSection = (sectionKey) => {
     const element = dateRefs.current[sectionKey];
     const container = scrollContainerRef.current;
-    
+
     if (element && container) {
       const elementTop = element.offsetTop;
       const containerTop = container.offsetTop;
       const targetScroll = elementTop - containerTop - 100; // 100px offset from top
       const startScroll = container.scrollTop;
       const distance = targetScroll - startScroll;
-      
+
       // Custom slow scroll animation - 2 seconds duration
       const duration = 2000; // 2 seconds for very smooth, visible scroll
       const startTime = performance.now();
-      
+
       const animateScroll = (currentTime) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        
+
         // Ease in-out function for natural feel
         const easeInOutCubic = progress < 0.5
           ? 4 * progress * progress * progress
           : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-        
+
         const currentScroll = startScroll + (distance * easeInOutCubic);
         container.scrollTop = currentScroll;
-        
+
         if (progress < 1) {
           requestAnimationFrame(animateScroll);
         }
       };
-      
+
       requestAnimationFrame(animateScroll);
     }
   };
@@ -741,7 +775,7 @@ const AffectationsListScreen = () => {
               </label>
             </div>
             <div className="w-4/5 overflow-hidden">
-              <div 
+              <div
                 ref={dateScrollRef}
                 className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
               >
@@ -749,10 +783,10 @@ const AffectationsListScreen = () => {
                   const dateObj = parseDate(dateInfo.date);
                   const displayDate = dateObj && !isNaN(dateObj.getTime())
                     ? dateObj.toLocaleDateString('fr-FR', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    })
                     : dateInfo.date;
 
                   return (
@@ -785,7 +819,7 @@ const AffectationsListScreen = () => {
               </label>
             </div>
             <div className="w-4/5 overflow-hidden">
-              <div 
+              <div
                 ref={enseignantScrollRef}
                 className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
               >
@@ -818,7 +852,7 @@ const AffectationsListScreen = () => {
               </label>
             </div>
             <div className="w-4/5 overflow-hidden">
-              <div 
+              <div
                 ref={salleScrollRef}
                 className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
               >
@@ -838,8 +872,8 @@ const AffectationsListScreen = () => {
       </div>
 
       {/* Main Content */}
-      <div 
-        ref={scrollContainerRef} 
+      <div
+        ref={scrollContainerRef}
         className="flex-1 overflow-auto bg-gray-50 p-8 w-full"
       >
         {loading ? (
@@ -948,8 +982,8 @@ const AffectationsListScreen = () => {
         ) : (
           <div className="space-y-6 max-w-full">
             {groupKeys.map(groupKey => (
-              <div 
-                key={groupKey} 
+              <div
+                key={groupKey}
                 ref={el => dateRefs.current[groupKey] = el}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden w-full"
               >
@@ -1039,7 +1073,7 @@ const AffectationsListScreen = () => {
                         const isDragging = draggedProf?.affectation_id === affectation.affectation_id;
                         const isSelected = selectedForSwap?.affectation_id === affectation.affectation_id;
                         const isValidSwapWithSelected = selectedForSwap && canSwap(selectedForSwap, affectation);
-                        
+
                         // Determine row style based on drag state
                         let rowClassName = 'transition-all ';
                         if (isDragging) {
@@ -1065,7 +1099,7 @@ const AffectationsListScreen = () => {
                         } else {
                           rowClassName += 'hover:bg-gray-50 ';
                         }
-                        
+
                         return (
                           <tr
                             key={affectation.affectation_id}
@@ -1100,10 +1134,10 @@ const AffectationsListScreen = () => {
                               stopAutoScroll();
                               // Restore original ring style
                               e.currentTarget.classList.remove('ring-2', 'ring-green-500', 'ring-red-500', 'shadow-lg');
-                              
+
                               // Always call handleDrop - it will show error if invalid
                               handleDrop(affectation);
-                              
+
                               // Restore the ring based on validity
                               if (isValidDropTarget) {
                                 e.currentTarget.classList.add('ring-1', 'ring-green-300');
@@ -1112,96 +1146,111 @@ const AffectationsListScreen = () => {
                               }
                             }}
                           >
-                          {/* Code Column */}
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-gray-900">
-                              {affectation.code_smartex_ens}
-                            </span>
-                          </td>
-
-                          {/* Draggable Professor Column */}
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div
-                              className="flex items-center cursor-grab active:cursor-grabbing hover:bg-blue-50 p-2 rounded-lg transition-all"
-                              draggable
-                              onDragStart={(e) => {
-                                e.stopPropagation();
-                                setDraggedProf(affectation);
-                                e.currentTarget.classList.add('opacity-50');
-                              }}
-                              onDragEnd={(e) => {
-                                e.currentTarget.classList.remove('opacity-50');
-                                stopAutoScroll();
-                                // Delay clearing draggedProf to prevent modal glitching
-                                setTimeout(() => {
-                                  // Only clear if modal isn't showing
-                                  if (!showSwapModal) {
-                                    setDraggedProf(null);
-                                  }
-                                }, 100);
-                              }}
-                            >
-                              <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm mr-3 flex-shrink-0 bg-blue-100 text-blue-600">
-                                {getInitials(affectation.prenom_ens, affectation.nom_ens)}
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">
-                                  {getTeacherName(affectation.code_smartex_ens)}
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {affectation.email_ens || ''}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{affectation.date_examen}</div>
-                            <div className="text-xs text-gray-500">
-                              {affectation.h_debut} - {affectation.h_fin}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                              {affectation.seance}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            <span className="font-mono bg-gray-100 px-2 py-1 rounded">
-                              {affectation.cod_salle || '-'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                            {currentSession?.libelle_session || 'Session'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="inline-block px-3 py-1 bg-red-50 rounded-lg">
-                              <span className="text-sm font-medium text-red-600">
-                                {affectation.enseignant ? getTeacherName(affectation.enseignant) : '-'}
+                            {/* Code Column */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm font-medium text-gray-900">
+                                {affectation.code_smartex_ens}
                               </span>
-                            </div>
-                          </td>
-                          {/* Click-to-Swap Button */}
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSelectForSwap(affectation);
-                              }}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                isSelected
-                                  ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                              }`}
-                            >
-                              {isSelected ? '✓ Sélectionné' : '↔️ Échanger'}
-                            </button>
-                          </td>
-                        </tr>
-                      );
+                            </td>
+
+                            {/* Draggable Professor Column */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div
+                                className="flex items-center cursor-grab active:cursor-grabbing hover:bg-blue-50 p-2 rounded-lg transition-all"
+                                draggable
+                                onDragStart={(e) => {
+                                  e.stopPropagation();
+                                  setDraggedProf(affectation);
+                                  e.currentTarget.classList.add('opacity-50');
+                                }}
+                                onDragEnd={(e) => {
+                                  e.currentTarget.classList.remove('opacity-50');
+                                  stopAutoScroll();
+                                  // Delay clearing draggedProf to prevent modal glitching
+                                  setTimeout(() => {
+                                    // Only clear if modal isn't showing
+                                    if (!showSwapModal) {
+                                      setDraggedProf(null);
+                                    }
+                                  }, 100);
+                                }}
+                              >
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm mr-3 flex-shrink-0 bg-blue-100 text-blue-600">
+                                  {getInitials(affectation.prenom_ens, affectation.nom_ens)}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {getTeacherName(affectation.code_smartex_ens)}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {affectation.email_ens || ''}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{affectation.date_examen}</div>
+                              <div className="text-xs text-gray-500">
+                                {affectation.h_debut} - {affectation.h_fin}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                {affectation.seance}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <span className="font-mono bg-gray-100 px-2 py-1 rounded">
+                                {affectation.cod_salle || '-'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              {currentSession?.libelle_session || 'Session'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="inline-block px-3 py-1 bg-red-50 rounded-lg">
+                                <span className="text-sm font-medium text-red-600">
+                                  {affectation.enseignant ? getTeacherName(affectation.enseignant) : '-'}
+                                </span>
+                              </div>
+                            </td>
+                            {/* Click-to-Swap Button */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectForSwap(affectation);
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isSelected
+                                    ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                    : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                  }`}
+                              >
+                                {isSelected ? '✓ Sélectionné' : '↔️ Échanger'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
                       })}
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination at bottom - same as top */}
+                {grouped[groupKey].length > 0 && (
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                    <Pagination
+                      currentPage={groupPagination[groupKey]?.currentPage || 1}
+                      totalPages={Math.ceil(grouped[groupKey].length / (groupPagination[groupKey]?.itemsPerPage || 10))}
+                      totalItems={grouped[groupKey].length}
+                      itemsPerPage={groupPagination[groupKey]?.itemsPerPage || 10}
+                      onPageChange={(page) => handleGroupPageChange(groupKey, page)}
+                      onItemsPerPageChange={(items) => handleGroupItemsPerPageChange(groupKey, items)}
+                      showItemsPerPage={true}
+                      itemsPerPageOptions={[5, 10, 25, 50]}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -1277,7 +1326,7 @@ const AffectationsListScreen = () => {
         <div className="space-y-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-gray-700">
-              Êtes-vous sûr de vouloir supprimer <strong>toutes les affectations</strong> ?
+              Êtes-vous sûr de vouloir supprimer <strong>toutes les affectations</strong> de la session <strong>{currentSession.libelle_session}</strong> ?
             </p>
             <p className="text-sm text-red-600 mt-2 font-semibold">
               ⚠️ Cette action est irréversible !

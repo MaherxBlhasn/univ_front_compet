@@ -435,8 +435,8 @@ export const permuterAffectations = async (affectationId1, affectationId2) => {
 }
 
 // Supprimer toutes les affectations
-export const deleteAllAffectations = async () => {
-  return await apiRequest('/api/affectations/delete-all', {
+export const deleteAllAffectations = async (id_session) => {
+  return await apiRequest(`/api/affectations/delete-by-session/${id_session}`, {
     method: 'DELETE',
   })
 }
