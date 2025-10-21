@@ -8,6 +8,8 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
   const [preview, setPreview] = useState([])
   const [errors, setErrors] = useState([])
   const fileInputRef = useRef(null)
+  // Fields detected in the uploaded file (used to render preview table)
+  const previewFields = Object.keys(preview[0] || {})
 
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0]
@@ -23,6 +25,40 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
 
   const parseCSV = (file) => {
     const reader = new FileReader()
+
+    // Helper: split a CSV line respecting quoted values
+    const splitCSVLine = (line, delimiter = ',') => {
+      const result = []
+      let cur = ''
+      let inQuotes = false
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i]
+
+        if (char === '"') {
+          // if next char is also a quote, treat as escaped quote
+          if (inQuotes && line[i + 1] === '"') {
+            cur += '"'
+            i++
+          } else {
+            inQuotes = !inQuotes
+          }
+          continue
+        }
+
+        if (char === delimiter && !inQuotes) {
+          result.push(cur.trim())
+          cur = ''
+        } else {
+          cur += char
+        }
+      }
+      result.push(cur.trim())
+      // Remove surrounding quotes from each value
+      return result.map(v => {
+        if (v.startsWith('"') && v.endsWith('"')) return v.slice(1, -1)
+        return v
+      })
+    }
     
     // Déterminer si c'est un fichier Excel ou CSV
     const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
@@ -55,17 +91,17 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
           console.log('🔍 DEBUG - Colonnes attendues:', expectedFields)
           
           // Vérifier que tous les champs requis sont présents
-          const missingFields = expectedFields.filter(field => !headers.includes(field))
-          if (missingFields.length > 0) {
-            setErrors([
-              `Champs manquants dans le fichier: ${missingFields.join(', ')}`,
-              ``,
-              `Colonnes trouvées dans votre fichier: ${headers.join(', ')}`,
-              ``,
-              `Assurez-vous que votre fichier contient exactement ces colonnes: ${expectedFields.join(', ')}`
-            ])
-            return
-          }
+          // const missingFields = expectedFields.filter(field => !headers.includes(field))
+          // if (missingFields.length > 0) {
+          //   setErrors([
+          //     `Champs manquants dans le fichier: ${missingFields.join(', ')}`,
+          //     ``,
+          //     `Colonnes trouvées dans votre fichier: ${headers.join(', ')}`,
+          //     ``,
+          //     `Assurez-vous que votre fichier contient exactement ces colonnes: ${expectedFields.join(', ')}`
+          //   ])
+          //   return
+          // }
           
           // Parser les données (limiter à 10 pour l'aperçu)
           const previewData = []
@@ -97,10 +133,9 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
             return
           }
 
-          // Parse header - Support both comma and semicolon
-          let headers = lines[0].includes(';') 
-            ? lines[0].split(';').map(h => h.trim())
-            : lines[0].split(',').map(h => h.trim())
+          // Parse header - Support both comma and semicolon and respect quoted fields
+          const detectedDelimiter = lines[0].includes(';') ? ';' : ','
+          let headers = splitCSVLine(lines[0], detectedDelimiter).map(h => String(h).trim())
           
           console.log('🔍 DEBUG - Colonnes détectées dans le fichier CSV:', headers)
           console.log('🔍 DEBUG - Colonnes attendues:', expectedFields)
@@ -118,21 +153,18 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
             return
           }
 
-          // Detect delimiter
-          const delimiter = lines[0].includes(';') ? ';' : ','
-
-          // Parse data rows
+          // Parse data rows using the detected delimiter and respecting quotes
           const data = []
           const parseErrors = []
-          
+
           for (let i = 1; i < Math.min(lines.length, 11); i++) { // Preview first 10 rows
-            const values = lines[i].split(delimiter).map(v => v.trim())
+            const values = splitCSVLine(lines[i], detectedDelimiter)
             const row = {}
-            
+
             headers.forEach((header, index) => {
-              row[header] = values[index] || ''
+              row[header] = values[index] !== undefined ? String(values[index]).trim() : ''
             })
-            
+
             data.push(row)
           }
 
@@ -296,7 +328,7 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      {expectedFields.map(field => (
+                      {Object.keys(preview[0] || {}).map(field => (
                         <th key={field} className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                           {field}
                         </th>
@@ -306,7 +338,7 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
                   <tbody className="bg-white divide-y divide-gray-200">
                     {preview.map((row, index) => (
                       <tr key={index} className="hover:bg-gray-50">
-                        {expectedFields.map(field => (
+                        {previewFields.map(field => (
                           <td key={field} className="px-4 py-2 text-sm text-gray-900">
                             {row[field]}
                           </td>
