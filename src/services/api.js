@@ -435,10 +435,32 @@ export const permuterAffectations = async (affectationId1, affectationId2) => {
 }
 
 // Supprimer toutes les affectations
-export const deleteAllAffectations = async () => {
-  return await apiRequest('/api/affectations/delete-all', {
+export const deleteAllAffectations = async (id_session) => {
+  return await apiRequest(`/api/affectations/delete-by-session/${id_session}`, {
     method: 'DELETE',
   })
+}
+
+// Envoyer les convocations par email
+export const sendConvocationsByEmail = async (sessionId, filenames) => {
+  const response = await fetch(
+    `${API_CONFIG.baseURL}/api/email/send-convocations`,
+    {
+      method: 'POST',
+      headers: API_CONFIG.headers,
+      body: JSON.stringify({
+        session_id: sessionId,
+        filenames: filenames
+      })
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || `Failed to send convocations by email: ${response.status}`)
+  }
+
+  return await response.json()
 }
 
 // ==================== STATISTICS ====================
@@ -537,6 +559,7 @@ export default {
   updateAffectation,
   permuterAffectations,
   deleteAllAffectations,
+  sendConvocationsByEmail,
   
   // Statistics
   fetchSessionStatistics,
