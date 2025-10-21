@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useSession } from '../contexts/SessionContext';
 import { sendConvocationsByEmail } from '../services/api';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
@@ -712,10 +713,10 @@ const TelechargementScreen = () => {
       {toast && (
         <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
           <div className={`rounded-lg shadow-2xl p-4 min-w-[300px] max-w-md flex items-start gap-3 ${toast.type === 'success'
-              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-              : toast.type === 'error'
-                ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-                : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+            : toast.type === 'error'
+              ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+              : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
             }`}>
             <div className="flex-shrink-0">
               {toast.type === 'success' ? (
@@ -815,10 +816,10 @@ const TelechargementScreen = () => {
       {/* Message Notification */}
       {message && (
         <div className={`mx-8 mt-4 p-4 rounded-lg border ${message.type === 'success'
-            ? 'bg-green-50 border-green-200 text-green-800'
-            : message.type === 'warning'
-              ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+          ? 'bg-green-50 border-green-200 text-green-800'
+          : message.type === 'warning'
+            ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+            : 'bg-red-50 border-red-200 text-red-800'
           }`}>
           <p className="font-medium flex items-center gap-2">
             {message.type === 'success' ? (
@@ -917,7 +918,7 @@ const TelechargementScreen = () => {
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-orange-900 mb-1">⚠️ Configuration Email Obligatoire</h3>
                 <p className="text-sm text-orange-800">
-                  Actuellement, vous utilisez la configuration par défaut. Vous devez <strong>configurer votre propre serveur SMTP</strong> dans les <a href="/parametres" className="underline font-semibold hover:text-orange-900">Paramètres</a> pour pouvoir envoyer des emails.
+                  Actuellement, vous utilisez la configuration par défaut. Vous devez <strong>configurer votre propre serveur SMTP</strong> dans les <span className="underline font-semibold">Paramètres</span> pour pouvoir envoyer des emails.
                 </p>
               </div>
             </div>
@@ -1206,8 +1207,8 @@ const TelechargementScreen = () => {
                   <button
                     onClick={() => setActiveFormat('pdf')}
                     className={`flex-1 px-6 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 ${activeFormat === 'pdf'
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
-                        : 'bg-transparent text-gray-600 hover:bg-white/80 hover:text-blue-600'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
+                      : 'bg-transparent text-gray-600 hover:bg-white/80 hover:text-blue-600'
                       }`}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1215,8 +1216,8 @@ const TelechargementScreen = () => {
                     </svg>
                     <span>Format PDF</span>
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${activeFormat === 'pdf'
-                        ? 'bg-white/20 text-white'
-                        : 'bg-blue-100 text-blue-700'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-blue-100 text-blue-700'
                       }`}>
                       {pdfConvocations.length + pdfAffectations.length}
                     </span>
@@ -1224,8 +1225,8 @@ const TelechargementScreen = () => {
                   <button
                     onClick={() => setActiveFormat('csv')}
                     className={`flex-1 px-6 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 ${activeFormat === 'csv'
-                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
-                        : 'bg-transparent text-gray-600 hover:bg-white/80 hover:text-green-600'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
+                      : 'bg-transparent text-gray-600 hover:bg-white/80 hover:text-green-600'
                       }`}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1233,8 +1234,8 @@ const TelechargementScreen = () => {
                     </svg>
                     <span>Format CSV</span>
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${activeFormat === 'csv'
-                        ? 'bg-white/20 text-white'
-                        : 'bg-green-100 text-green-700'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-green-100 text-green-700'
                       }`}>
                       {csvConvocations.length + csvAffectations.length}
                     </span>

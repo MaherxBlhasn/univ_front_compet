@@ -349,20 +349,20 @@ const AffectationScreen = () => {
                             <div className="space-y-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-sm text-gray-600">Total créneaux</span>
-                                <span className="font-bold text-gray-900">{optimizationResult.statistics.couverture.total}</span>
+                                <span className="font-bold text-gray-900">{optimizationResult.statistics.couverture.total || 0}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-sm text-gray-600">Couverts</span>
-                                <span className="font-bold text-green-600">{optimizationResult.statistics.couverture.couverts}</span>
+                                <span className="font-bold text-green-600">{optimizationResult.statistics.couverture.bien_couvertes || 0}</span>
                               </div>
                               <div className="flex justify-between items-center">
                                 <span className="text-sm text-gray-600">Déficitaires</span>
-                                <span className="font-bold text-orange-600">{optimizationResult.statistics.couverture.deficitaires}</span>
+                                <span className="font-bold text-orange-600">{optimizationResult.statistics.couverture.sous_couvertes || 0}</span>
                               </div>
                               <div className="mt-3 pt-3 border-t border-gray-200">
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm font-medium text-gray-700">Taux de couverture</span>
-                                  <span className="text-2xl font-bold text-purple-600">{optimizationResult.statistics.couverture.taux_couverture.toFixed(1)}%</span>
+                                  <span className="text-2xl font-bold text-purple-600">{(optimizationResult.statistics.couverture.taux_couverture || 0).toFixed(1)}%</span>
                                 </div>
                               </div>
                             </div>
