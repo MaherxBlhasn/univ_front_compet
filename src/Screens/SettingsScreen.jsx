@@ -135,6 +135,25 @@ const SettingsScreen = () => {
     }
   }
 
+  // Save all modified grades at once
+  const handleSaveAllGrades = async () => {
+    const modifiedGrades = gradesArray.filter(grade => isModified(grade.code_grade))
+
+    if (modifiedGrades.length === 0) {
+      return
+    }
+
+    // Save all modified grades
+    for (const gradeObj of modifiedGrades) {
+      await handleSaveGrade(gradeObj.code_grade)
+    }
+  }
+
+  // Check if any grade has been modified
+  const hasAnyModification = () => {
+    return gradesArray.some(grade => isModified(grade.code_grade))
+  }
+
   // Email handlers
   const handleEmailFieldChange = (field, value) => {
     setEmailConfigState(prev => ({ ...prev, [field]: value }))
@@ -239,112 +258,94 @@ const SettingsScreen = () => {
         <div className="w-full">
           <Card className="shadow-lg">
             {/* Header Section */}
-            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
-              <div className="p-2 bg-white rounded-lg shadow-sm">
-                <GraduationCap size={20} className="text-orange-600" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                  <GraduationCap size={20} className="text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">Quotas des grades d'enseignants</h3>
+                  <p className="text-xs text-gray-600">Nombre maximum par grade</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">Quotas des grades d'enseignants</h3>
-                <p className="text-xs text-gray-600">Nombre maximum par grade</p>
-              </div>
+
+              {/* Save All Button */}
+              {hasAnyModification() && (
+                <Button
+                  variant="primary"
+                  icon={Save}
+                  onClick={handleSaveAllGrades}
+                  className="whitespace-nowrap"
+                >
+                  Enregistrer tout
+                </Button>
+              )}
             </div>
 
-            {/* Compact Table Layout */}
-            {/* Grades Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Grade
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Libellé
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Quota Maximum
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {gradesArray.map((gradeObj, index) => {
-                    const colors = getGradeColor(gradeObj.code_grade)
-                    return (
-                      <tr
-                        key={gradeObj.code_grade}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        {/* Grade Badge */}
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold border ${colors.bg} ${colors.text} ${colors.border}`}>
-                            {gradeObj.code_grade}
-                          </span>
-                        </td>
-
-                        {/* Grade Name */}
-                        <td className="px-6 py-4">
-                          <span className="text-base font-medium text-gray-900">
-                            {gradeObj.grade}
-                          </span>
-                        </td>
-
-                        {/* Quota Input */}
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center items-center gap-4">
-                            <input
-                              type="number"
-                              min="0"
-                              value={gradeQuotas[gradeObj.code_grade] || 0}
-                              onChange={(e) => handleQuotaChange(gradeObj.code_grade, e.target.value)}
-                              className="w-24 px-3 py-2 text-center text-sm font-semibold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
-                            />
-
-                            {/* Save Button - Shows when modified */}
-                              {isModified(gradeObj.code_grade) && saveStatus[gradeObj.code_grade] !== 'success' && (
-                              <button
-                                onClick={() => handleSaveGrade(gradeObj.code_grade)}
-                                disabled={savingGrades[gradeObj.code_grade]}
-                                className="p-2 hover:bg-orange-100 rounded-lg transition-colors disabled:opacity-50"
-                                title="Enregistrer ce quota"
-                              >
-                                <Save size={16} className="text-orange-600" />
-                              </button>
-                            )}
-
-                            {/* Status Indicators */}
-                            {saveStatus[gradeObj.code_grade] === 'success' && (
-                              <CheckCircle size={18} className="text-green-500 animate-pulse" />
-                            )}
-                            {saveStatus[gradeObj.code_grade] === 'error' && (
-                              <XCircle size={18} className="text-red-500 animate-pulse" />
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-
-                {/* Total Footer */}
-                <tfoot>
-                  <tr className="bg-gradient-to-r from-orange-50 to-amber-50 border-t-2 border-orange-200">
-                    <td colSpan="2" className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <GraduationCap size={18} className="text-orange-600" />
-                        <span className="text-sm font-bold text-gray-900">Total des quotas</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="text-2xl font-bold text-orange-600">
-                          {Object.values(gradeQuotas).reduce((sum, quota) => sum + quota, 0)}
+            {/* Grid Layout for Grades */}
+            <div className="p-4">
+              {/* Grades Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                {gradesArray.map((gradeObj) => {
+                  const colors = getGradeColor(gradeObj.code_grade)
+                  return (
+                    <div
+                      key={gradeObj.code_grade}
+                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      {/* Grade Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${colors.bg} ${colors.text} ${colors.border}`}>
+                          {gradeObj.code_grade}
                         </span>
-                        <span className="text-xs text-gray-600 font-medium">max</span>
+                        {/* Status Indicators */}
+                        {saveStatus[gradeObj.code_grade] === 'success' && (
+                          <CheckCircle size={16} className="text-green-500 animate-pulse" />
+                        )}
+                        {saveStatus[gradeObj.code_grade] === 'error' && (
+                          <XCircle size={16} className="text-red-500 animate-pulse" />
+                        )}
+                        {isModified(gradeObj.code_grade) && !saveStatus[gradeObj.code_grade] && (
+                          <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" title="Modifié" />
+                        )}
                       </div>
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+
+                      {/* Grade Name */}
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">
+                        {gradeObj.grade}
+                      </h4>
+
+                      {/* Quota Input */}
+                      <div>
+                        <label className="text-xs text-gray-600 block mb-1">Quota maximum</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={gradeQuotas[gradeObj.code_grade] || 0}
+                          onChange={(e) => handleQuotaChange(gradeObj.code_grade, e.target.value)}
+                          className="w-full px-3 py-2 text-center text-sm font-semibold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Total Footer */}
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap size={18} className="text-orange-600" />
+                    <span className="text-sm font-bold text-gray-900">Total des quotas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-orange-600">
+                      {Object.values(gradeQuotas).reduce((sum, quota) => sum + quota, 0)}
+                    </span>
+                    <span className="text-xs text-gray-600 font-medium">max</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </Card>
 
@@ -361,125 +362,165 @@ const SettingsScreen = () => {
             </div>
 
             <div className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Note d'aide */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  💡 <strong>Comment trouver ces informations ?</strong>
+                </p>
+                <ul className="mt-2 text-xs text-blue-700 space-y-1 ml-4 list-disc">
+                  <li><strong>Gmail :</strong> Serveur: smtp.gmail.com, Port: 587, utilisez un "Mot de passe d'application" (Compte Google → Sécurité → Validation en 2 étapes → Mots de passe d'application)</li>
+                  <li><strong>Outlook :</strong> Serveur: smtp-mail.outlook.com, Port: 587</li>
+                  <li><strong>Yahoo :</strong> Serveur: smtp.mail.yahoo.com, Port: 587</li>
+                  <li>Le mot de passe d'application est différent de votre mot de passe email habituel pour des raisons de sécurité</li>
+                </ul>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">SMTP Server</label>
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                    Serveur email
+                    <span className="text-xs text-gray-500">(SMTP)</span>
+                  </label>
                   <input
                     name="SMTP_SERVER"
-                    placeholder="smtp.example.com"
+                    placeholder="Ex: smtp.gmail.com"
                     value={emailConfig.SMTP_SERVER}
                     onChange={(e) => handleEmailFieldChange('SMTP_SERVER', e.target.value)}
-                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                    className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
+                  <p className="mt-1 text-xs text-gray-500">Adresse du serveur d'envoi d'emails</p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">SMTP Port</label>
+                  <label className="text-sm font-medium text-gray-700">Port du serveur</label>
                   <input
                     name="SMTP_PORT"
                     type="number"
-                    placeholder="587"
+                    placeholder="Ex: 587"
                     value={emailConfig.SMTP_PORT}
                     onChange={(e) => handleEmailFieldChange('SMTP_PORT', parseInt(e.target.value) || 0)}
-                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                    className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
+                  <p className="mt-1 text-xs text-gray-500">Généralement 587 ou 465</p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">SMTP User</label>
+                  <label className="text-sm font-medium text-gray-700">Email de connexion</label>
                   <input
                     name="SMTP_USER"
-                    placeholder="user@example.com"
+                    placeholder="Ex: votreemail@gmail.com"
                     value={emailConfig.SMTP_USER}
                     onChange={(e) => handleEmailFieldChange('SMTP_USER', e.target.value)}
-                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                    className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
+                  <p className="mt-1 text-xs text-gray-500">Votre adresse email complète</p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">SMTP Password</label>
+                  <label className="text-sm font-medium text-gray-700">Mot de passe d'application</label>
                   <input
                     name="SMTP_PASSWORD"
-                    placeholder="Mot de passe"
+                    placeholder="Votre mot de passe"
                     value={emailConfig.SMTP_PASSWORD}
                     type="password"
                     onChange={(e) => handleEmailFieldChange('SMTP_PASSWORD', e.target.value)}
-                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                    className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
+                  <p className="mt-1 text-xs text-gray-500">⚠️ Utilisez un mot de passe d'application, pas votre mot de passe habituel</p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">From Email</label>
+                  <label className="text-sm font-medium text-gray-700">Email d'envoi</label>
                   <input
                     name="FROM_EMAIL"
-                    placeholder="from@example.com"
+                    placeholder="Ex: noreply@votredomaine.com"
                     value={emailConfig.FROM_EMAIL}
                     onChange={(e) => handleEmailFieldChange('FROM_EMAIL', e.target.value)}
-                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                    className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
+                  <p className="mt-1 text-xs text-gray-500">Email qui apparaîtra comme expéditeur</p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700">From Name</label>
+                  <label className="text-sm font-medium text-gray-700">Nom de l'expéditeur</label>
                   <input
                     name="FROM_NAME"
-                    placeholder="Service Exams"
+                    placeholder="Ex: Service des Examens"
                     value={emailConfig.FROM_NAME}
                     onChange={(e) => handleEmailFieldChange('FROM_NAME', e.target.value)}
-                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                    className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
+                  <p className="mt-1 text-xs text-gray-500">Nom affiché dans les emails reçus</p>
                 </div>
               </div>
 
               {/* Test recipient field - explicit input for testing the mail */}
               <div className="mt-4">
-                <label className="text-sm font-medium text-gray-700">Adresse destinataire pour le test</label>
+                <label className="text-sm font-medium text-gray-700">Email de test</label>
                 <input
-                  placeholder="ex: test@example.com"
+                  placeholder="Ex: test@example.com"
                   name="TEST_RECIPIENT"
                   value={emailConfig.TEST_RECIPIENT || emailConfig.FROM_EMAIL}
                   onChange={(e) => handleEmailFieldChange('TEST_RECIPIENT', e.target.value)}
-                  className="mt-2 w-full px-3 py-2 border rounded-lg"
+                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
+                <p className="mt-1 text-xs text-gray-500">Adresse email pour tester la configuration</p>
               </div>
 
-              <div className="flex items-center gap-3 mt-4">
-                <button
-                  onClick={handleSaveEmailConfig}
-                  disabled={emailLoading}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
-                >
-                  <Save size={16} /> Enregistrer
-                </button>
-                {emailSaveStatus === 'success' && (
-                  <span className="text-sm text-green-600 font-medium">{emailSaveMessage}</span>
-                )}
-                {emailSaveStatus === 'error' && (
-                  <span className="text-sm text-red-600 font-medium">{emailSaveMessage}</span>
-                )}
-
-                <button
-                  onClick={handleTestEmail}
-                  disabled={emailLoading}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${emailTestStatus === 'success' ? 'bg-green-600 text-white border-green-700' : emailTestStatus === 'error' ? 'bg-red-100 text-red-700 border-red-300' : 'bg-white text-gray-700 border-gray-200'} disabled:opacity-50`}
-                >
-                  {emailTestStatus === 'success' ? (
-                    <>
-                      <CheckCircle size={16} /> Test réussi
-                    </>
-                  ) : emailTestStatus === 'error' ? (
-                    <>
-                      <XCircle size={16} /> Test échoué
-                    </>
-                  ) : (
-                    'Tester le mail'
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-200">
+                {/* Status Messages */}
+                <div className="flex-1">
+                  {emailSaveStatus === 'success' && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
+                      <CheckCircle size={16} />
+                      {emailSaveMessage}
+                    </div>
                   )}
-                </button>
-              </div>
+                  {emailSaveStatus === 'error' && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
+                      <XCircle size={16} />
+                      {emailSaveMessage}
+                    </div>
+                  )}
+                  {emailTestStatus === 'error' && (
+                    <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
+                      <XCircle size={16} />
+                      {emailTestMessage}
+                    </div>
+                  )}
+                </div>
 
-              {emailTestStatus === 'error' && (
-                <p className="mt-2 text-sm text-red-600">{emailTestMessage}</p>
-              )}
+                {/* Buttons */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleTestEmail}
+                    disabled={emailLoading}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${emailTestStatus === 'success' ? 'bg-green-600 text-white border-green-700 hover:bg-green-700' : emailTestStatus === 'error' ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} disabled:opacity-50`}
+                  >
+                    {emailTestStatus === 'success' ? (
+                      <>
+                        <CheckCircle size={16} /> Test réussi
+                      </>
+                    ) : emailTestStatus === 'error' ? (
+                      <>
+                        <XCircle size={16} /> Test échoué
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw size={16} /> Tester
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleSaveEmailConfig}
+                    disabled={emailLoading}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+                  >
+                    <Save size={16} /> Enregistrer
+                  </button>
+                </div>
+              </div>
             </div>
           </Card>
         </div>

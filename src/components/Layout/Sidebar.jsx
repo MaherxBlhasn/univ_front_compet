@@ -171,7 +171,13 @@ const Sidebar = () => {
                             <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                           </svg>
                           <span>{subItem.label}</span>
-                          {isActive && (
+                          {/* Badge pour Téléchargement */}
+                          {subItem.id === 'telechargement' && (
+                            <span className="ml-auto px-2 py-0.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[10px] font-bold rounded-full shadow-md animate-pulse border border-orange-400">
+                              📧 Email
+                            </span>
+                          )}
+                          {isActive && subItem.id !== 'telechargement' && (
                             <span className="ml-auto w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
                           )}
                         </div>

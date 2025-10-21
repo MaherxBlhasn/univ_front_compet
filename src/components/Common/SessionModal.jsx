@@ -5,8 +5,6 @@ import Button from './Button'
 const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
   const [formData, setFormData] = useState({
     libelle_session: '',
-    date_debut: '',
-    date_fin: '',
     AU: '',
     Semestre: '',
     type_session: ''
@@ -17,8 +15,6 @@ const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
     if (session) {
       setFormData({
         libelle_session: session.libelle_session || '',
-        date_debut: session.date_debut || '',
-        date_fin: session.date_fin || '',
         AU: session.AU || '',
         Semestre: session.Semestre || '',
         type_session: session.type_session || ''
@@ -27,8 +23,6 @@ const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
       // Reset form for new session
       setFormData({
         libelle_session: '',
-        date_debut: '',
-        date_fin: '',
         AU: '',
         Semestre: '',
         type_session: ''
@@ -47,7 +41,7 @@ const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      
+
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl">
           {/* Header */}
@@ -81,34 +75,6 @@ const SessionModal = ({ isOpen, onClose, onSave, session = null }) => {
                   placeholder="Ex: Session Janvier 2025"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-              </div>
-
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date de début *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.date_debut}
-                    onChange={(e) => setFormData({ ...formData, date_debut: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date de fin *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.date_fin}
-                    onChange={(e) => setFormData({ ...formData, date_fin: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
               </div>
 
               {/* Année Universitaire */}

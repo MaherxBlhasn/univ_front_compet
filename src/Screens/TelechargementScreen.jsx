@@ -7,38 +7,38 @@ import Header from '@components/Layout/Header';
 
 const TelechargementScreen = () => {
   const { currentSession } = useSession();
-  
+
   // États pour PDFs
   const [pdfConvocations, setPdfConvocations] = useState([]);
   const [pdfAffectations, setPdfAffectations] = useState([]);
-  
+
   // États pour CSVs
   const [csvConvocations, setCsvConvocations] = useState([]);
   const [csvAffectations, setCsvAffectations] = useState([]);
-  
+
   // Sélections
   const [selectedPdfConvocations, setSelectedPdfConvocations] = useState([]);
   const [selectedCsvConvocations, setSelectedCsvConvocations] = useState([]);
   const [selectedPdfAffectations, setSelectedPdfAffectations] = useState([]);
   const [selectedCsvAffectations, setSelectedCsvAffectations] = useState([]);
-  
+
   // Filtres de recherche
   const [searchConvocations, setSearchConvocations] = useState('');
-  
+
   // Toast notifications
   const [toast, setToast] = useState(null);
-  
+
   // Fonction pour afficher un toast
   const showToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 5000); // Disparaît après 5 secondes
   };
-  
+
   // Format actif (pdf ou csv)
   const [activeFormat, setActiveFormat] = useState('pdf');
-  
+
   const [loading, setLoading] = useState(false);
-  
+
   // Fonction pour extraire le nom de l'enseignant du nom de fichier
   // Format: convocation_CODE_NOM_PRENOM_X.pdf ou affectation_CODE_NOM_PRENOM_X.pdf
   const extractTeacherName = (filename) => {
@@ -58,7 +58,7 @@ const TelechargementScreen = () => {
       return filename.toLowerCase();
     }
   };
-  
+
   // Filtrer les fichiers par nom d'enseignant
   const filterFilesByTeacher = (files, searchTerm) => {
     if (!searchTerm || searchTerm.trim() === '') {
@@ -70,34 +70,34 @@ const TelechargementScreen = () => {
       return teacherName.includes(search);
     });
   };
-  
+
   // Appliquer les filtres
   const filteredPdfConvocations = filterFilesByTeacher(pdfConvocations, searchConvocations);
   const filteredCsvConvocations = filterFilesByTeacher(csvConvocations, searchConvocations);
-  
-  const [generating, setGenerating] = useState({ 
-    pdfConvocations: false, 
+
+  const [generating, setGenerating] = useState({
+    pdfConvocations: false,
     csvConvocations: false,
-    pdfAffectation: false, 
-    csvAffectation: false 
+    pdfAffectation: false,
+    csvAffectation: false
   });
   const [message, setMessage] = useState(null);
 
   // ========== ÉTAPE 1 : GÉNÉRATION ==========
-  
+
   const handleGeneratePdfConvocations = async () => {
     if (!currentSession) return;
-    
+
     setGenerating({ ...generating, pdfConvocations: true });
     setMessage(null);
-    
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/affectations/generate_convocations/${currentSession.id_session}`,
         { method: 'GET' }
       );
       const data = await response.json();
-      
+
       if (response.ok) {
         setMessage({
           type: 'success',
@@ -123,17 +123,17 @@ const TelechargementScreen = () => {
 
   const handleGenerateCsvConvocations = async () => {
     if (!currentSession) return;
-    
+
     setGenerating({ ...generating, csvConvocations: true });
     setMessage(null);
-    
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/affectations/csv/convocations/${currentSession.id_session}`,
         { method: 'GET' }
       );
       const data = await response.json();
-      
+
       if (data.success) {
         setMessage({
           type: 'success',
@@ -159,17 +159,17 @@ const TelechargementScreen = () => {
 
   const handleGeneratePdfAffectation = async () => {
     if (!currentSession) return;
-    
+
     setGenerating({ ...generating, pdfAffectation: true });
     setMessage(null);
-    
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/affectations/pdf/${currentSession.id_session}`,
         { method: 'GET' }
       );
       const data = await response.json();
-      
+
       if (data.success) {
         setMessage({
           type: 'success',
@@ -195,17 +195,17 @@ const TelechargementScreen = () => {
 
   const handleGenerateCsvAffectations = async () => {
     if (!currentSession) return;
-    
+
     setGenerating({ ...generating, csvAffectation: true });
     setMessage(null);
-    
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/affectations/csv/affectations/${currentSession.id_session}`,
         { method: 'GET' }
       );
       const data = await response.json();
-      
+
       if (data.success) {
         setMessage({
           type: 'success',
@@ -231,10 +231,10 @@ const TelechargementScreen = () => {
 
   const handleGenerateAll = async () => {
     if (!currentSession) return;
-    
+
     setLoading(true);
     setMessage(null);
-    
+
     try {
       await Promise.all([
         fetch(`http://localhost:5000/api/affectations/generate_convocations/${currentSession.id_session}`),
@@ -242,12 +242,12 @@ const TelechargementScreen = () => {
         fetch(`http://localhost:5000/api/affectations/pdf/${currentSession.id_session}`),
         fetch(`http://localhost:5000/api/affectations/csv/affectations/${currentSession.id_session}`)
       ]);
-      
+
       setMessage({
         type: 'success',
         text: '✓ Tous les fichiers (PDFs + CSVs) ont été générés !'
       });
-      
+
       await loadAllFiles();
     } catch (error) {
       console.error('Erreur:', error);
@@ -261,16 +261,16 @@ const TelechargementScreen = () => {
   };
 
   // ========== ÉTAPE 2 : LISTING ==========
-  
+
   const loadPdfConvocations = async () => {
     if (!currentSession) return;
-    
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/affectations/convocations/list/${currentSession.id_session}`
       );
       const data = await response.json();
-      
+
       if (data.success) {
         setPdfConvocations(data.files || []);
       } else {
@@ -284,13 +284,13 @@ const TelechargementScreen = () => {
 
   const loadCsvConvocations = async () => {
     if (!currentSession) return;
-    
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/affectations/csv/convocations/list/${currentSession.id_session}`
       );
       const data = await response.json();
-      
+
       if (data.success) {
         setCsvConvocations(data.files || []);
       } else {
@@ -304,15 +304,15 @@ const TelechargementScreen = () => {
 
   const loadPdfAffectations = async () => {
     if (!currentSession) return;
-    
+
     try {
       const response = await fetch(
         'http://localhost:5000/api/affectations/list-pdfs'
       );
       const data = await response.json();
-      
+
       if (data.success) {
-        const filtered = (data.files || []).filter(f => 
+        const filtered = (data.files || []).filter(f =>
           f.download_url && f.download_url.includes(`session_${currentSession.id_session}`)
         );
         setPdfAffectations(filtered);
@@ -327,13 +327,13 @@ const TelechargementScreen = () => {
 
   const loadCsvAffectations = async () => {
     if (!currentSession) return;
-    
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/affectations/csv/affectations/list/${currentSession.id_session}`
       );
       const data = await response.json();
-      
+
       if (data.success) {
         setCsvAffectations(data.files || []);
       } else {
@@ -347,7 +347,7 @@ const TelechargementScreen = () => {
 
   const loadAllFiles = async () => {
     if (!currentSession) return;
-    
+
     setLoading(true);
     try {
       await Promise.all([
@@ -370,10 +370,10 @@ const TelechargementScreen = () => {
 
   // ========== ÉTAPE 3 : TÉLÉCHARGEMENT ==========
   // ========== ÉTAPE 3 : TÉLÉCHARGEMENT ==========
-  
+
   const handleDownloadSelection = async () => {
     if (!currentSession) return;
-    
+
     const files = [
       ...selectedPdfConvocations.map(filename => ({
         type: 'convocation',
@@ -407,16 +407,16 @@ const TelechargementScreen = () => {
 
     setLoading(true);
     setMessage(null);
-    
+
     try {
       const response = await fetch(
         'http://localhost:5000/api/affectations/download-multiple',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            session_id: currentSession.id_session, 
-            files 
+          body: JSON.stringify({
+            session_id: currentSession.id_session,
+            files
           })
         }
       );
@@ -424,7 +424,7 @@ const TelechargementScreen = () => {
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        
+
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = `selection_session_${currentSession.id_session}.zip`;
         if (contentDisposition) {
@@ -433,7 +433,7 @@ const TelechargementScreen = () => {
             filename = match[1].replace(/['"]/g, '');
           }
         }
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
@@ -441,12 +441,12 @@ const TelechargementScreen = () => {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        
+
         setMessage({
           type: 'success',
           text: `✓ ${files.length} fichier(s) téléchargé(s) avec succès !`
         });
-        
+
         // Réinitialiser toutes les sélections
         setSelectedPdfConvocations([]);
         setSelectedCsvConvocations([]);
@@ -472,7 +472,7 @@ const TelechargementScreen = () => {
 
   const handleDownloadAll = async () => {
     if (!currentSession) return;
-    
+
     const files = [
       ...pdfConvocations.map(f => ({ type: 'convocation', format: 'pdf', filename: f.filename })),
       ...csvConvocations.map(f => ({ type: 'convocation', format: 'csv', filename: f.filename })),
@@ -490,16 +490,16 @@ const TelechargementScreen = () => {
 
     setLoading(true);
     setMessage(null);
-    
+
     try {
       const response = await fetch(
         'http://localhost:5000/api/affectations/download-multiple',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            session_id: currentSession.id_session, 
-            files 
+          body: JSON.stringify({
+            session_id: currentSession.id_session,
+            files
           })
         }
       );
@@ -507,7 +507,7 @@ const TelechargementScreen = () => {
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
-        
+
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = `tous_fichiers_session_${currentSession.id_session}.zip`;
         if (contentDisposition) {
@@ -516,7 +516,7 @@ const TelechargementScreen = () => {
             filename = match[1].replace(/['"]/g, '');
           }
         }
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
@@ -524,7 +524,7 @@ const TelechargementScreen = () => {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        
+
         setMessage({
           type: 'success',
           text: `✓ ${files.length} fichier(s) téléchargé(s) avec succès !`
@@ -548,29 +548,29 @@ const TelechargementScreen = () => {
   };
 
   // ========== ENVOI PAR EMAIL ==========
-  
+
   const [sendingEmails, setSendingEmails] = useState(false);
-  
+
   const handleSendConvocationsByEmail = async () => {
     if (!currentSession) return;
-    
+
     // Seuls les PDFs de convocations peuvent être envoyés
     if (selectedPdfConvocations.length === 0) {
       showToast('error', 'Veuillez sélectionner au moins une convocation PDF à envoyer');
       return;
     }
-    
+
     setSendingEmails(true);
     setMessage(null);
-    
+
     try {
       const data = await sendConvocationsByEmail(
         currentSession.id_session,
         selectedPdfConvocations
       );
-      
+
       const { success_count, error_count, skipped_count } = data;
-      
+
       // Afficher toast en fonction du résultat
       if (error_count > 0 && success_count === 0) {
         // Tout a échoué
@@ -585,7 +585,7 @@ const TelechargementScreen = () => {
         // Complètement réussi
         showToast('success', `✅ ${success_count} email(s) envoyé(s) avec succès!`);
       }
-      
+
       // Garder le message détaillé pour affichage dans la page
       let messageText = '';
       if (success_count > 0) {
@@ -597,13 +597,13 @@ const TelechargementScreen = () => {
       if (error_count > 0) {
         messageText += `${messageText ? ' • ' : ''}✗ ${error_count} erreur(s)`;
       }
-      
+
       setMessage({
         type: success_count > 0 ? 'success' : 'warning',
         text: messageText,
         details: data.details
       });
-      
+
       // Réinitialiser la sélection si tous ont été envoyés avec succès
       if (error_count === 0 && skipped_count === 0) {
         setSelectedPdfConvocations([]);
@@ -621,7 +621,7 @@ const TelechargementScreen = () => {
   };
 
   // ========== ÉTAPE 4 : GESTION DES SÉLECTIONS ==========
-  
+
   // PDF Convocations
   const togglePdfConvocationSelection = (filename) => {
     setSelectedPdfConvocations(prev =>
@@ -694,16 +694,16 @@ const TelechargementScreen = () => {
   }
 
   // Compteurs totaux
-  const totalSelected = 
-    selectedPdfConvocations.length + 
-    selectedCsvConvocations.length + 
-    selectedPdfAffectations.length + 
+  const totalSelected =
+    selectedPdfConvocations.length +
+    selectedCsvConvocations.length +
+    selectedPdfAffectations.length +
     selectedCsvAffectations.length;
-  
-  const totalFiles = 
-    pdfConvocations.length + 
-    csvConvocations.length + 
-    pdfAffectations.length + 
+
+  const totalFiles =
+    pdfConvocations.length +
+    csvConvocations.length +
+    pdfAffectations.length +
     csvAffectations.length;
 
   return (
@@ -711,13 +711,12 @@ const TelechargementScreen = () => {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
-          <div className={`rounded-lg shadow-2xl p-4 min-w-[300px] max-w-md flex items-start gap-3 ${
-            toast.type === 'success' 
-              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
-              : toast.type === 'error' 
-              ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' 
-              : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
-          }`}>
+          <div className={`rounded-lg shadow-2xl p-4 min-w-[300px] max-w-md flex items-start gap-3 ${toast.type === 'success'
+              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+              : toast.type === 'error'
+                ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+            }`}>
             <div className="flex-shrink-0">
               {toast.type === 'success' ? (
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -736,7 +735,7 @@ const TelechargementScreen = () => {
             <div className="flex-1">
               <p className="font-semibold text-sm">{toast.message}</p>
             </div>
-            <button 
+            <button
               onClick={() => setToast(null)}
               className="flex-shrink-0 hover:bg-white/20 rounded-full p-1 transition-colors"
             >
@@ -747,7 +746,7 @@ const TelechargementScreen = () => {
           </div>
         </div>
       )}
-      
+
       {/* Header - même style que AffectationScreen */}
       <Header
         title="Téléchargement des Documents"
@@ -815,13 +814,12 @@ const TelechargementScreen = () => {
 
       {/* Message Notification */}
       {message && (
-        <div className={`mx-8 mt-4 p-4 rounded-lg border ${
-          message.type === 'success' 
+        <div className={`mx-8 mt-4 p-4 rounded-lg border ${message.type === 'success'
             ? 'bg-green-50 border-green-200 text-green-800'
             : message.type === 'warning'
-            ? 'bg-yellow-50 border-yellow-200 text-yellow-800' 
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
+              ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
           <p className="font-medium flex items-center gap-2">
             {message.type === 'success' ? (
               <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -838,7 +836,7 @@ const TelechargementScreen = () => {
             )}
             {message.text}
           </p>
-          
+
           {/* Détails de l'envoi d'emails si disponibles */}
           {message.details && (
             <div className="mt-3 space-y-2 text-sm">
@@ -856,7 +854,7 @@ const TelechargementScreen = () => {
                   </ul>
                 </details>
               )}
-              
+
               {message.details.skipped && message.details.skipped.length > 0 && (
                 <details className="bg-white/50 rounded p-2">
                   <summary className="cursor-pointer font-medium text-yellow-700">
@@ -871,7 +869,7 @@ const TelechargementScreen = () => {
                   </ul>
                 </details>
               )}
-              
+
               {message.details.errors && message.details.errors.length > 0 && (
                 <details className="bg-white/50 rounded p-2">
                   <summary className="cursor-pointer font-medium text-red-700">
@@ -893,6 +891,39 @@ const TelechargementScreen = () => {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto px-8 py-6">
+        {/* Notes d'information */}
+        <div className="space-y-3 mb-6">
+          {/* Note 1: Instructions pour l'envoi d'emails */}
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
+            <div className="flex items-start gap-3">
+              <svg className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-blue-900 mb-1">💡 Comment envoyer les convocations par email ?</h3>
+                <p className="text-sm text-blue-800">
+                  Une fois les PDF des convocations générés et sélectionnés, vous pouvez envoyer des emails aux enseignants en cliquant sur le bouton <strong>"Envoyer par Email"</strong> en haut à droite.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Note 2: Avertissement configuration par défaut */}
+          <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg shadow-sm">
+            <div className="flex items-start gap-3">
+              <svg className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-orange-900 mb-1">⚠️ Configuration Email Obligatoire</h3>
+                <p className="text-sm text-orange-800">
+                  Actuellement, vous utilisez la configuration par défaut. Vous devez <strong>configurer votre propre serveur SMTP</strong> dans les <a href="/parametres" className="underline font-semibold hover:text-orange-900">Paramètres</a> pour pouvoir envoyer des emails.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {loading && !generating.convocations && !generating.affectation ? (
           <div className="flex items-center justify-center h-64">
             <LoadingSpinner />
@@ -918,7 +949,7 @@ const TelechargementScreen = () => {
                     </p>
                   </div>
                 </div>
-                
+
                 {/* Bouton Tout Générer */}
                 <button
                   onClick={handleGenerateAll}
@@ -940,7 +971,7 @@ const TelechargementScreen = () => {
                       PDF
                     </div>
                   </div>
-                  
+
                   <div className="mb-3">
                     <div className="flex items-center gap-2.5 mb-1.5">
                       <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
@@ -974,7 +1005,7 @@ const TelechargementScreen = () => {
                       </>
                     )}
                   </button>
-                  
+
                   {pdfConvocations.length > 0 && (
                     <div className="mt-3 p-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-lg">
                       <p className="text-xs text-green-700 font-bold text-center flex items-center justify-center gap-1.5">
@@ -994,7 +1025,7 @@ const TelechargementScreen = () => {
                       CSV
                     </div>
                   </div>
-                  
+
                   <div className="mb-3">
                     <div className="flex items-center gap-2.5 mb-1.5">
                       <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
@@ -1023,7 +1054,7 @@ const TelechargementScreen = () => {
                       <span className="text-sm">Générer CSV</span>
                     )}
                   </button>
-                  
+
                   {csvConvocations.length > 0 && (
                     <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
                       <p className="text-xs text-green-700 font-semibold text-center">
@@ -1040,7 +1071,7 @@ const TelechargementScreen = () => {
                       PDF
                     </div>
                   </div>
-                  
+
                   <div className="mb-3">
                     <div className="flex items-center gap-2.5 mb-1.5">
                       <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
@@ -1074,7 +1105,7 @@ const TelechargementScreen = () => {
                       </>
                     )}
                   </button>
-                  
+
                   {pdfAffectations.length > 0 && (
                     <div className="mt-3 p-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-lg">
                       <p className="text-xs text-green-700 font-bold text-center flex items-center justify-center gap-1.5">
@@ -1094,7 +1125,7 @@ const TelechargementScreen = () => {
                       CSV
                     </div>
                   </div>
-                  
+
                   <div className="mb-3">
                     <div className="flex items-center gap-2.5 mb-1.5">
                       <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md">
@@ -1128,7 +1159,7 @@ const TelechargementScreen = () => {
                       </>
                     )}
                   </button>
-                  
+
                   {csvAffectations.length > 0 && (
                     <div className="mt-3 p-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-lg">
                       <p className="text-xs text-green-700 font-bold text-center flex items-center justify-center gap-1.5">
@@ -1174,41 +1205,37 @@ const TelechargementScreen = () => {
                 <div className="flex items-center gap-4 bg-white/50 backdrop-blur-sm rounded-xl p-2 shadow-inner">
                   <button
                     onClick={() => setActiveFormat('pdf')}
-                    className={`flex-1 px-6 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 ${
-                      activeFormat === 'pdf'
+                    className={`flex-1 px-6 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 ${activeFormat === 'pdf'
                         ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
                         : 'bg-transparent text-gray-600 hover:bg-white/80 hover:text-blue-600'
-                    }`}
+                      }`}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
                     <span>Format PDF</span>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      activeFormat === 'pdf' 
-                        ? 'bg-white/20 text-white' 
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${activeFormat === 'pdf'
+                        ? 'bg-white/20 text-white'
                         : 'bg-blue-100 text-blue-700'
-                    }`}>
+                      }`}>
                       {pdfConvocations.length + pdfAffectations.length}
                     </span>
                   </button>
                   <button
                     onClick={() => setActiveFormat('csv')}
-                    className={`flex-1 px-6 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 ${
-                      activeFormat === 'csv'
+                    className={`flex-1 px-6 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 ${activeFormat === 'csv'
                         ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
                         : 'bg-transparent text-gray-600 hover:bg-white/80 hover:text-green-600'
-                    }`}
+                      }`}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <span>Format CSV</span>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      activeFormat === 'csv' 
-                        ? 'bg-white/20 text-white' 
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${activeFormat === 'csv'
+                        ? 'bg-white/20 text-white'
                         : 'bg-green-100 text-green-700'
-                    }`}>
+                      }`}>
                       {csvConvocations.length + csvAffectations.length}
                     </span>
                   </button>
@@ -1250,7 +1277,7 @@ const TelechargementScreen = () => {
                           </button>
                         )}
                       </div>
-                      
+
                       {/* Barre de recherche */}
                       {pdfConvocations.length > 0 && (
                         <div className="mb-5">
@@ -1280,7 +1307,7 @@ const TelechargementScreen = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {pdfConvocations.length === 0 ? (
                         <div className="text-center py-12 text-gray-400 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
                           <svg className="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1307,7 +1334,7 @@ const TelechargementScreen = () => {
                             const isSelected = selectedPdfConvocations.includes(file.filename);
                             return (
                               <label key={file.filename} className={`group relative flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${isSelected ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-400 shadow-lg scale-105' : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md hover:scale-102'}`}>
-                                <input type="checkbox" checked={isSelected} onChange={() => togglePdfConvocationSelection(file.filename)} className="w-5 h-5 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer"/>
+                                <input type="checkbox" checked={isSelected} onChange={() => togglePdfConvocationSelection(file.filename)} className="w-5 h-5 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer" />
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-sm font-bold truncate ${isSelected ? 'text-blue-900' : 'text-gray-800'}`}>{file.filename}</p>
                                   <div className="flex items-center gap-2 mt-1">
@@ -1356,7 +1383,7 @@ const TelechargementScreen = () => {
                           </button>
                         )}
                       </div>
-                      
+
                       {pdfAffectations.length === 0 ? (
                         <div className="text-center py-12 text-gray-400 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
                           <svg className="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1370,7 +1397,7 @@ const TelechargementScreen = () => {
                             const isSelected = selectedPdfAffectations.includes(file.filename);
                             return (
                               <label key={file.filename} className={`group relative flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${isSelected ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-400 shadow-lg scale-105' : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md hover:scale-102'}`}>
-                                <input type="checkbox" checked={isSelected} onChange={() => togglePdfAffectationSelection(file.filename)} className="w-5 h-5 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer"/>
+                                <input type="checkbox" checked={isSelected} onChange={() => togglePdfAffectationSelection(file.filename)} className="w-5 h-5 text-blue-600 rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer" />
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-sm font-bold truncate ${isSelected ? 'text-blue-900' : 'text-gray-800'}`}>{file.filename}</p>
                                   <div className="flex items-center gap-2 mt-1">
@@ -1421,7 +1448,7 @@ const TelechargementScreen = () => {
                           </button>
                         )}
                       </div>
-                      
+
                       {/* Barre de recherche */}
                       {csvConvocations.length > 0 && (
                         <div className="mb-5">
@@ -1451,7 +1478,7 @@ const TelechargementScreen = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {csvConvocations.length === 0 ? (
                         <div className="text-center py-12 text-gray-400 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
                           <svg className="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1478,7 +1505,7 @@ const TelechargementScreen = () => {
                             const isSelected = selectedCsvConvocations.includes(file.filename);
                             return (
                               <label key={file.filename} className={`group relative flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${isSelected ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-400 shadow-lg scale-105' : 'bg-white border-gray-200 hover:border-green-300 hover:shadow-md hover:scale-102'}`}>
-                                <input type="checkbox" checked={isSelected} onChange={() => toggleCsvConvocationSelection(file.filename)} className="w-5 h-5 text-green-600 rounded-md focus:ring-2 focus:ring-green-500 cursor-pointer"/>
+                                <input type="checkbox" checked={isSelected} onChange={() => toggleCsvConvocationSelection(file.filename)} className="w-5 h-5 text-green-600 rounded-md focus:ring-2 focus:ring-green-500 cursor-pointer" />
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-sm font-bold truncate ${isSelected ? 'text-green-900' : 'text-gray-800'}`}>{file.filename}</p>
                                   <div className="flex items-center gap-2 mt-1">
@@ -1527,7 +1554,7 @@ const TelechargementScreen = () => {
                           </button>
                         )}
                       </div>
-                      
+
                       {csvAffectations.length === 0 ? (
                         <div className="text-center py-12 text-gray-400 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
                           <svg className="w-16 h-16 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1541,7 +1568,7 @@ const TelechargementScreen = () => {
                             const isSelected = selectedCsvAffectations.includes(file.filename);
                             return (
                               <label key={file.filename} className={`group relative flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${isSelected ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-400 shadow-lg scale-105' : 'bg-white border-gray-200 hover:border-green-300 hover:shadow-md hover:scale-102'}`}>
-                                <input type="checkbox" checked={isSelected} onChange={() => toggleCsvAffectationSelection(file.filename)} className="w-5 h-5 text-green-600 rounded-md focus:ring-2 focus:ring-green-500 cursor-pointer"/>
+                                <input type="checkbox" checked={isSelected} onChange={() => toggleCsvAffectationSelection(file.filename)} className="w-5 h-5 text-green-600 rounded-md focus:ring-2 focus:ring-green-500 cursor-pointer" />
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-sm font-bold truncate ${isSelected ? 'text-green-900' : 'text-gray-800'}`}>{file.filename}</p>
                                   <div className="flex items-center gap-2 mt-1">

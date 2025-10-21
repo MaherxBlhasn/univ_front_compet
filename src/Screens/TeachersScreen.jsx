@@ -70,15 +70,15 @@ const TeachersScreen = () => {
                 fetchEnseignants(),
                 fetchGrades()
             ])
-            
+
             console.log('📊 Données enseignants reçues:', enseignantsData)
             console.log('📊 Données grades reçues:', gradesData)
-            
+
             setTeachers(enseignantsData)
-            
+
             // Save the full grades array for rendering
             setGradesArray(gradesData)
-            
+
             // Convertir le tableau de grades en objet pour un accès rapide
             // Note: Backend returns 'grade' field, not 'libelle_grade'
             const gradesMap = {}
@@ -86,10 +86,10 @@ const TeachersScreen = () => {
                 gradesMap[g.code_grade] = g.grade
             })
             setGrades(gradesMap)
-            
+
             console.log('✅ Enseignants chargés:', enseignantsData.length)
             console.log('✅ Grades chargés:', gradesMap)
-            
+
             showNotification('Succès', `${enseignantsData.length} enseignants chargés`, 'success')
         } catch (error) {
             console.error('❌ Erreur lors du chargement des données:', error)
@@ -102,18 +102,18 @@ const TeachersScreen = () => {
 
     // Filtrer les enseignants
     const filteredTeachers = teachers.filter(teacher => {
-        const matchSearch = searchTerm === '' || 
+        const matchSearch = searchTerm === '' ||
             teacher.nom_ens.toLowerCase().includes(searchTerm.toLowerCase()) ||
             teacher.prenom_ens.toLowerCase().includes(searchTerm.toLowerCase()) ||
             teacher.email_ens?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             teacher.code_smartex_ens.toString().includes(searchTerm)
-        
+
         const matchGrade = gradeFilter === 'all' || teacher.grade_code_ens === gradeFilter
-        
-        const matchSurveillance = surveillanceFilter === 'all' || 
+
+        const matchSurveillance = surveillanceFilter === 'all' ||
             (surveillanceFilter === 'oui' && teacher.participe_surveillance) ||
             (surveillanceFilter === 'non' && !teacher.participe_surveillance)
-        
+
         return matchSearch && matchGrade && matchSurveillance
     })
 
@@ -147,10 +147,10 @@ const TeachersScreen = () => {
                 ...teacher,
                 participe_surveillance: !teacher.participe_surveillance
             }
-            
+
             await updateEnseignant(code_smartex_ens, updatedTeacher)
-            
-            setTeachers(teachers.map(t => 
+
+            setTeachers(teachers.map(t =>
                 t.code_smartex_ens === code_smartex_ens ? updatedTeacher : t
             ))
             showNotification('Succès', 'Statut de surveillance mis à jour', 'success')
@@ -165,7 +165,7 @@ const TeachersScreen = () => {
             if (editingTeacher) {
                 // Modification
                 await updateEnseignant(teacherData.code_smartex_ens, teacherData)
-                setTeachers(teachers.map(t => 
+                setTeachers(teachers.map(t =>
                     t.code_smartex_ens === teacherData.code_smartex_ens ? teacherData : t
                 ))
                 showNotification('Succès', 'Enseignant modifié avec succès', 'success')
@@ -243,24 +243,24 @@ const TeachersScreen = () => {
     const handleImportCSV = async (file) => {
         try {
             setLoading(true)
-            
+
             // Utiliser la nouvelle API unifiée qui supporte CSV et XLSX
             console.log('📤 Upload et import du fichier:', file.name)
             const result = await uploadAndImportFile(file, 'enseignants')
             console.log('✅ Upload et import terminés:', result)
-            
+
             // Afficher le résultat
             if (result.success && result.import) {
                 const importData = result.import
                 showNotification(
-                    'Succès', 
-                    `${importData.inserted || 0} enseignants importés${importData.errors && importData.errors.length > 0 ? ` (${importData.errors.length} erreurs)` : ''}`, 
+                    'Succès',
+                    `${importData.inserted || 0} enseignants importés${importData.errors && importData.errors.length > 0 ? ` (${importData.errors.length} erreurs)` : ''}`,
                     'success'
                 )
-                
+
                 // Recharger les enseignants
                 await loadData()
-                
+
                 // Notifier le changement pour mettre à jour le statut d'affectation
                 notifyDataDeleted()
             } else {
@@ -330,13 +330,10 @@ const TeachersScreen = () => {
                                 <span className="text-gray-700">Tous les grades</span>
                             ) : (
                                 <div className="flex items-center gap-2">
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                                        getGradeColor(gradeFilter).bg
-                                    } ${
-                                        getGradeColor(gradeFilter).text
-                                    } ${
-                                        getGradeColor(gradeFilter).border
-                                    }`}>
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getGradeColor(gradeFilter).bg
+                                        } ${getGradeColor(gradeFilter).text
+                                        } ${getGradeColor(gradeFilter).border
+                                        }`}>
                                         {gradeFilter}
                                     </span>
                                     <span className="text-sm text-gray-700">
@@ -371,13 +368,10 @@ const TeachersScreen = () => {
                                             }}
                                             className="w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors flex items-center gap-2"
                                         >
-                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                                                getGradeColor(gradeObj.code_grade).bg
-                                            } ${
-                                                getGradeColor(gradeObj.code_grade).text
-                                            } ${
-                                                getGradeColor(gradeObj.code_grade).border
-                                            }`}>
+                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getGradeColor(gradeObj.code_grade).bg
+                                                } ${getGradeColor(gradeObj.code_grade).text
+                                                } ${getGradeColor(gradeObj.code_grade).border
+                                                }`}>
                                                 {gradeObj.code_grade}
                                             </span>
                                             <span className="text-sm text-gray-600">
@@ -389,7 +383,7 @@ const TeachersScreen = () => {
                             </div>
                         )}
                     </div>
-                    <select 
+                    <select
                         value={surveillanceFilter}
                         onChange={(e) => setSurveillanceFilter(e.target.value)}
                         className="px-4 py-2.5 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-medium bg-white hover:border-gray-500 cursor-pointer"
@@ -452,8 +446,8 @@ const TeachersScreen = () => {
                                 gradesArray.map((gradeObj) => {
                                     const colors = getGradeColor(gradeObj.code_grade);
                                     // Abbreviate long names
-                                    const displayName = gradeObj.grade.length > 25 
-                                        ? gradeObj.grade.substring(0, 22) + '...' 
+                                    const displayName = gradeObj.grade.length > 25
+                                        ? gradeObj.grade.substring(0, 22) + '...'
                                         : gradeObj.grade;
                                     return (
                                         <div key={gradeObj.code_grade} className="flex items-center gap-1">
@@ -531,13 +525,10 @@ const TeachersScreen = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                                                getGradeColor(teacher.grade_code_ens).bg
-                                            } ${
-                                                getGradeColor(teacher.grade_code_ens).text
-                                            } ${
-                                                getGradeColor(teacher.grade_code_ens).border
-                                            }`}>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getGradeColor(teacher.grade_code_ens).bg
+                                                } ${getGradeColor(teacher.grade_code_ens).text
+                                                } ${getGradeColor(teacher.grade_code_ens).border
+                                                }`}>
                                                 {teacher.grade_code_ens}
                                             </span>
                                         </td>
@@ -545,11 +536,10 @@ const TeachersScreen = () => {
                                             <div className="flex items-center justify-center">
                                                 <button
                                                     onClick={() => handleToggleSurveillance(teacher.code_smartex_ens)}
-                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${
-                                                        teacher.participe_surveillance
+                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${teacher.participe_surveillance
                                                             ? 'bg-green-100 text-green-700 hover:bg-green-200'
                                                             : 'bg-red-100 text-red-700 hover:bg-red-200'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {teacher.participe_surveillance ? (
                                                         <>
@@ -651,7 +641,7 @@ const TeachersScreen = () => {
                             <h3 className="text-lg font-semibold text-gray-900">Supprimer tous les enseignants</h3>
                         </div>
                         <p className="text-gray-600 mb-6">
-                            ⚠️ Êtes-vous absolument sûr de vouloir supprimer <strong>TOUS les enseignants</strong> ({teachers.length}) ? 
+                            ⚠️ Êtes-vous absolument sûr de vouloir supprimer <strong>TOUS les enseignants</strong> ({teachers.length}) ?
                             Cette action est <strong>irréversible</strong> et supprimera toutes les données associées.
                         </p>
                         <div className="flex gap-3 justify-end">
@@ -679,7 +669,7 @@ const TeachersScreen = () => {
                 onImport={handleImportCSV}
                 title="Importer des enseignants"
                 expectedFields={['code_smartex_ens', 'nom_ens', 'prenom_ens', 'email_ens', 'grade_code_ens', 'participe_surveillance']}
-                templateExample="code_smartex_ens,nom_ens,prenom_ens,email_ens,grade_code_ens,participe_surveillance\n57,Karoui,Wafa,wafa.karoui@isi.utm.tn,PR,1"
+                templateExample="57,Karoui,Wafa,wafa.karoui@isi.utm.tn,PR,1"
             />
         </div>
     )

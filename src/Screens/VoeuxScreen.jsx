@@ -265,7 +265,7 @@ const VoeuxScreen = () => {
         )
     }
 
-    const csvTemplate = "code_smartex_ens,nom_ens,prenom_ens,jour,seance\n57,Karoui,Wafa,6,S3"
+    const csvTemplate = "57,Karoui,Wafa,6,S3"
 
     // Calculer les statistiques
     const stats = {
@@ -316,7 +316,7 @@ const VoeuxScreen = () => {
                             icon={Upload}
                             onClick={() => setShowImportModal(true)}
                         >
-                            Importer CSV
+                            Importer
                         </Button>
                         <Button
                             variant="secondary"
@@ -423,7 +423,7 @@ const VoeuxScreen = () => {
                                 Ajouter un vœu
                             </Button>
                             <Button variant="secondary" icon={Upload} onClick={() => setShowImportModal(true)}>
-                                Importer CSV
+                                Importer
                             </Button>
                         </div>
                     </div>
@@ -531,6 +531,7 @@ const VoeuxScreen = () => {
                 title="Importer des vœux depuis CSV"
                 expectedFields={['code_smartex_ens', 'nom_ens', 'prenom_ens', 'jour', 'seance']}
                 templateExample={csvTemplate}
+                showFormat2={true}
             />
 
             {/* Delete confirmation */}

@@ -3,7 +3,7 @@ import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react'
 import Button from './Button'
 import * as XLSX from 'xlsx'
 
-const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expectedFields, templateExample, additionalData = {} }) => {
+const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expectedFields, templateExample, additionalData = {}, showFormat2 = false }) => {
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState([])
   const [errors, setErrors] = useState([])
@@ -14,10 +14,7 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
   const handleFileSelect = (e) => {
     const selectedFile = e.target.files[0]
     if (selectedFile) {
-      if (!selectedFile.name.endsWith('.csv') && !selectedFile.name.endsWith('.xlsx')) {
-        setErrors(['Le fichier doit être au format CSV ou XLSX'])
-        return
-      }
+      // Accepter tous les fichiers sans validation
       setFile(selectedFile)
       parseCSV(selectedFile)
     }
@@ -59,37 +56,39 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
         return v
       })
     }
-    
+
     // Déterminer si c'est un fichier Excel ou CSV
     const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
-    
+
     if (isExcel) {
       // Lire comme ArrayBuffer pour les fichiers Excel
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target.result)
           const workbook = XLSX.read(data, { type: 'array' })
-          
+
           // Prendre la première feuille
           const firstSheetName = workbook.SheetNames[0]
           const worksheet = workbook.Sheets[firstSheetName]
-          
+
           // Convertir en JSON
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-          
+
           console.log('📊 XLSX - Données brutes:', jsonData)
-          
-          if (jsonData.length < 2) {
-            setErrors(['Le fichier doit contenir au moins une ligne d\'en-tête et une ligne de données'])
+
+          // Accepter même si moins de 2 lignes
+          if (jsonData.length < 1) {
+            setPreview([])
+            setErrors([])
             return
           }
-          
+
           // La première ligne est l'en-tête
           const headers = jsonData[0].map(h => String(h).trim())
-          
+
           console.log('🔍 DEBUG - Colonnes détectées dans le fichier XLSX:', headers)
           console.log('🔍 DEBUG - Colonnes attendues:', expectedFields)
-          
+
           // Vérifier que tous les champs requis sont présents
           // const missingFields = expectedFields.filter(field => !headers.includes(field))
           // if (missingFields.length > 0) {
@@ -102,7 +101,7 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
           //   ])
           //   return
           // }
-          
+
           // Parser les données (limiter à 10 pour l'aperçu)
           const previewData = []
           for (let i = 1; i < Math.min(jsonData.length, 11); i++) {
@@ -112,12 +111,14 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
             })
             previewData.push(row)
           }
-          
+
           setPreview(previewData)
           setErrors([])
         } catch (error) {
-          setErrors(['Erreur lors de la lecture du fichier Excel'])
+          // Ne pas afficher d'erreur, juste logger
           console.error('Excel parse error:', error)
+          setPreview([])
+          setErrors([])
         }
       }
       reader.readAsArrayBuffer(file)
@@ -127,31 +128,22 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
         try {
           const text = e.target.result
           const lines = text.split('\n').filter(line => line.trim())
-          
-          if (lines.length < 2) {
-            setErrors(['Le fichier CSV doit contenir au moins une ligne d\'en-tête et une ligne de données'])
+
+          // Accepter même si moins de 2 lignes
+          if (lines.length < 1) {
+            setPreview([])
+            setErrors([])
             return
           }
 
           // Parse header - Support both comma and semicolon and respect quoted fields
           const detectedDelimiter = lines[0].includes(';') ? ';' : ','
           let headers = splitCSVLine(lines[0], detectedDelimiter).map(h => String(h).trim())
-          
+
           console.log('🔍 DEBUG - Colonnes détectées dans le fichier CSV:', headers)
           console.log('🔍 DEBUG - Colonnes attendues:', expectedFields)
-          
-          // Vérifier que tous les champs requis sont présents
-          const missingFields = expectedFields.filter(field => !headers.includes(field))
-          if (missingFields.length > 0) {
-            setErrors([
-              `Champs manquants dans le CSV: ${missingFields.join(', ')}`,
-              ``,
-              `Colonnes trouvées dans votre fichier: ${headers.join(', ')}`,
-              ``,
-              `Assurez-vous que votre fichier contient exactement ces colonnes: ${expectedFields.join(', ')}`
-            ])
-            return
-          }
+
+          // Ne plus vérifier les champs manquants - accepter tous les fichiers
 
           // Parse data rows using the detected delimiter and respecting quotes
           const data = []
@@ -169,10 +161,12 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
           }
 
           setPreview(data)
-          setErrors(parseErrors)
+          setErrors([])
         } catch (error) {
-          setErrors(['Erreur lors de la lecture du fichier CSV'])
+          // Ne pas afficher d'erreur, juste logger
           console.error('CSV parse error:', error)
+          setPreview([])
+          setErrors([])
         }
       }
       reader.readAsText(file)
@@ -180,13 +174,8 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
   }
 
   const handleImport = () => {
-    if (preview.length === 0) {
-      setErrors(['Aucune donnée à importer'])
-      return
-    }
-
+    // Accepter toujours si un fichier est sélectionné
     if (!file) {
-      setErrors(['Aucun fichier sélectionné'])
       return
     }
 
@@ -248,20 +237,43 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
 
         <div className="p-6 space-y-6">
           {/* Instructions */}
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 className="font-semibold text-blue-900 mb-2">Format attendu :</h3>
-            <p className="text-sm text-blue-800 mb-2">
-              Le fichier CSV doit contenir les colonnes suivantes :
-            </p>
-            <code className="block bg-white p-2 rounded text-xs text-gray-800 border border-blue-300">
-              {expectedFields.join(', ')}
-            </code>
-            {templateExample && (
-              <div className="mt-2">
-                <p className="text-xs text-blue-700 font-medium mb-1">Exemple :</p>
-                <code className="block bg-white p-2 rounded text-xs text-gray-800 border border-blue-300 overflow-x-auto">
-                  {templateExample}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-gray-900 mb-2">{showFormat2 ? 'Formats attendus :' : 'Format attendu :'}</h3>
+            {showFormat2 && (
+              <p className="text-sm text-gray-700 mb-3">
+                Le fichier CSV peut contenir l'un des formats suivants :
+              </p>
+            )}
+
+            {/* Format 1 - Blue */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-300">
+              <p className="text-sm text-blue-900 font-semibold mb-2">📋 {showFormat2 ? 'Format 1 :' : 'Format :'}</p>
+              <code className="block bg-white p-2 rounded text-xs text-blue-800 border border-blue-400">
+                {expectedFields.join(', ')}
+              </code>
+              {templateExample && (
+                <div className="mt-2">
+                  <p className="text-xs text-blue-700 font-medium mb-1">Exemple :</p>
+                  <code className="block bg-white p-2 rounded text-xs text-blue-800 border border-blue-400 overflow-x-auto">
+                    {templateExample}
+                  </code>
+                </div>
+              )}
+            </div>
+
+            {/* Format 2 - Green - Only show if showFormat2 is true */}
+            {showFormat2 && (
+              <div className="p-4 bg-green-50 rounded-lg border border-green-300">
+                <p className="text-sm text-green-900 font-semibold mb-2">📋 OU bien Format 2 :</p>
+                <code className="block bg-white p-2 rounded text-xs text-green-800 border border-green-400">
+                  Enseignant, Semestre, Session, Jour, Séances
                 </code>
+                <div className="mt-2">
+                  <p className="text-xs text-green-700 font-medium mb-1">Exemple :</p>
+                  <code className="block bg-white p-2 rounded text-xs text-green-800 border border-green-400 overflow-x-auto">
+                    N.BEN HARIZ,Semestre 1,Partiel,Mardi,S1,S2,S3,S4
+                  </code>
+                </div>
               </div>
             )}
           </div>
@@ -319,7 +331,7 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
           )}
 
           {/* Preview */}
-          {preview.length > 0 && errors.length === 0 && (
+          {preview.length > 0 && (
             <div>
               <h3 className="font-semibold text-gray-900 mb-3">
                 Aperçu ({preview.length} premières lignes) :
@@ -356,10 +368,10 @@ const CSVImportModal = ({ isOpen, onClose, onImport, title, description, expecte
             <Button variant="secondary" onClick={handleClose}>
               Annuler
             </Button>
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={handleImport}
-              disabled={!file || errors.length > 0 || preview.length === 0}
+              disabled={!file}
             >
               Importer {preview.length > 0 && `(${preview.length}+ lignes)`}
             </Button>

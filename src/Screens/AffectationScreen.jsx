@@ -137,6 +137,16 @@ const AffectationScreen = () => {
         }
       />
 
+      {/* Info note below header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
+        <div className="px-3 py-2 bg-blue-50 border border-blue-100 text-blue-700 text-sm rounded-md shadow-sm flex items-start gap-2">
+          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>La génération peut durer jusqu'à 10 minutes. Plus la génération dure, meilleur est le résultat.</span>
+        </div>
+      </div>
+
       {/* Status Cards */}
       {checkData && (
         <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -586,6 +596,35 @@ const AffectationScreen = () => {
                       ? "Cliquez sur 'Générer' pour créer les affectations automatiquement"
                       : "Complétez les données requises pour activer la génération"}
                   </p>
+
+                  {/* Blue info card in placeholder */}
+                  <div className="mt-4 max-w-3xl mx-auto">
+                    <div className="bg-blue-50 border border-blue-100 text-blue-800 text-sm rounded-lg px-6 py-5 shadow-sm">
+                      <strong className="block font-semibold text-base mb-3">Information sur la génération</strong>
+                      <p className="mb-3">La génération peut durer jusqu'à <strong>10 minutes</strong>. Plus la génération dure, meilleur est le résultat.</p>
+
+                      <div className="mt-4 pt-4 border-t border-blue-200">
+                        <p className="font-semibold mb-2">Les résultats respectent les contraintes suivantes :</p>
+                        <ol className="space-y-2 text-xs leading-relaxed">
+                          <li>
+                            <strong>1. ÉQUITÉ ABSOLUE PAR GRADE :</strong> Tous les enseignants d'un même grade ont EXACTEMENT le même nombre de surveillances (différence = 0).
+                          </li>
+                          <li>
+                            <strong>2. PARTICIPATION UNIVERSELLE :</strong> Tous les enseignants avec participe_surveillance=1 ont AU MOINS 1 affectation (aucun enseignant à 0).
+                          </li>
+                          <li>
+                            <strong>3. RESPECT DES QUOTAS :</strong> Les quotas optimaux calculés sont ≤ quotas de grade, garantissant qu'aucun enseignant ne dépasse sa limite.
+                          </li>
+                          <li>
+                            <strong>4. ÉQUILIBRAGE INTER-GRADES :</strong> Distribution équilibrée entre grades (ex: MA à 6/7, VA à 3/4) pour éviter qu'un grade soit à 100% tandis que d'autres sont à 0%.
+                          </li>
+                          <li>
+                            <strong>5. OPTIMISATION DOUCE :</strong> Respect maximum des vœux de non-surveillance, concentration sur minimum de jours, et présence préférentielle des responsables dans leurs salles.
+                          </li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
