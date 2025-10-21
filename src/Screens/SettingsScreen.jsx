@@ -4,7 +4,8 @@ import Header from '@components/Layout/Header'
 import Button from '@components/Common/Button'
 import Card from '@components/Common/Card'
 import LoadingSpinner from '@components/Common/LoadingSpinner'
-import { fetchGrades, updateGradeQuota } from '../services/api'
+import { fetchGrades, updateGradeQuota, getEmailConfig, setEmailConfig, testEmailConfig } from '../services/api'
+import { validateEmail } from '../utils/validators'
 
 const SettingsScreen = () => {
   const [gradeQuotas, setGradeQuotas] = useState({})
@@ -13,10 +14,25 @@ const SettingsScreen = () => {
   const [loading, setLoading] = useState(true)
   const [savingGrades, setSavingGrades] = useState({}) // Track which grade is currently saving
   const [saveStatus, setSaveStatus] = useState({}) // Track save status per grade: { code_grade: 'success' | 'error' | null }
+  // Email config state
+  const [emailConfig, setEmailConfigState] = useState({
+    SMTP_SERVER: '',
+    SMTP_PORT: 587,
+    SMTP_USER: '',
+    SMTP_PASSWORD: '',
+    FROM_EMAIL: '',
+    FROM_NAME: ''
+  })
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailTestStatus, setEmailTestStatus] = useState(null) // 'success' | 'error' | null
+  const [emailTestMessage, setEmailTestMessage] = useState('')
+  const [emailSaveStatus, setEmailSaveStatus] = useState(null) // 'success' | 'error' | null
+  const [emailSaveMessage, setEmailSaveMessage] = useState('')
 
   // Charger les grades et leurs quotas depuis l'API
   useEffect(() => {
     loadGrades()
+    loadEmailConfig()
   }, [])
 
   const loadGrades = async () => {
@@ -42,6 +58,20 @@ const SettingsScreen = () => {
       setGradesArray([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadEmailConfig = async () => {
+    try {
+      setEmailLoading(true)
+      const config = await getEmailConfig()
+      // The backend returns keys like FROM_EMAIL etc. We'll merge defaults to be safe
+      setEmailConfigState(prev => ({ ...prev, ...config }))
+    } catch (error) {
+      // ignore if not configured yet
+      console.warn('No email config found or error loading it:', error)
+    } finally {
+      setEmailLoading(false)
     }
   }
 
@@ -105,6 +135,82 @@ const SettingsScreen = () => {
     }
   }
 
+  // Email handlers
+  const handleEmailFieldChange = (field, value) => {
+    setEmailConfigState(prev => ({ ...prev, [field]: value }))
+    setEmailTestStatus(null)
+    setEmailTestMessage('')
+  }
+
+  const handleSaveEmailConfig = async () => {
+    try {
+      setEmailLoading(true)
+      // Basic validation
+      if (!emailConfig.SMTP_SERVER || !emailConfig.SMTP_USER || !emailConfig.SMTP_PASSWORD || !validateEmail(emailConfig.FROM_EMAIL)) {
+        setEmailSaveStatus('error')
+        setEmailSaveMessage('Veuillez renseigner SMTP_SERVER, SMTP_USER, SMTP_PASSWORD et un FROM_EMAIL valide')
+        return
+      }
+
+      await setEmailConfig(emailConfig)
+      setEmailSaveStatus('success')
+      setEmailSaveMessage('Configuration enregistrée')
+      setTimeout(() => {
+        setEmailSaveStatus(null)
+        setEmailSaveMessage('')
+      }, 2000)
+    } catch (error) {
+      console.error('Error saving email config', error)
+      setEmailSaveStatus('error')
+      setEmailSaveMessage(error.message || 'Erreur lors de la sauvegarde')
+    } finally {
+      setEmailLoading(false)
+    }
+  }
+
+  const handleTestEmail = async () => {
+    try {
+      setEmailLoading(true)
+      setEmailTestStatus(null)
+      setEmailTestMessage('')
+      // First save current config so backend test uses the latest values
+      try {
+        await setEmailConfig(emailConfig)
+      } catch (saveErr) {
+        // If saving fails, abort test and show save error
+        setEmailTestStatus('error')
+        setEmailTestMessage(`Impossible d'enregistrer la configuration avant le test: ${saveErr.message || saveErr}`)
+        return
+      }
+      // Prefer explicit TEST_RECIPIENT if provided, otherwise use FROM_EMAIL
+      const to = (emailConfig.TEST_RECIPIENT && validateEmail(emailConfig.TEST_RECIPIENT))
+        ? emailConfig.TEST_RECIPIENT
+        : (emailConfig.FROM_EMAIL && validateEmail(emailConfig.FROM_EMAIL)) ? emailConfig.FROM_EMAIL : ''
+      if (!to) {
+        setEmailTestStatus('error')
+        setEmailTestMessage('Veuillez renseigner un FROM_EMAIL valide pour le test')
+        return
+      }
+
+      const res = await testEmailConfig(to)
+      if (res && res.success) {
+        setEmailTestStatus('success')
+        setEmailTestMessage('Test réussi')
+        // Clear after a few seconds
+        setTimeout(() => setEmailTestStatus(null), 2000)
+      } else {
+        setEmailTestStatus('error')
+        setEmailTestMessage(res.error || 'Test échoué')
+      }
+    } catch (error) {
+      console.error('Email test failed', error)
+      setEmailTestStatus('error')
+      setEmailTestMessage(error.message || 'Erreur lors du test')
+    } finally {
+      setEmailLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50">
@@ -116,8 +222,8 @@ const SettingsScreen = () => {
   return (
     <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
       <Header
-        title="Gestion des Grades"
-        subtitle="Configurez les quotas d'enseignants par grade"
+        title="Gestion des paramètres"
+        subtitle="Modifiez les quotas par grade et configurez l'envoi d'emails"
         actions={
           <Button
             variant="outline"
@@ -144,6 +250,7 @@ const SettingsScreen = () => {
             </div>
 
             {/* Compact Table Layout */}
+            {/* Grades Table */}
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -168,36 +275,36 @@ const SettingsScreen = () => {
                         className="hover:bg-gray-50 transition-colors"
                       >
                         {/* Grade Badge */}
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${colors.bg} ${colors.text} ${colors.border}`}>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold border ${colors.bg} ${colors.text} ${colors.border}`}>
                             {gradeObj.code_grade}
                           </span>
                         </td>
 
                         {/* Grade Name */}
-                        <td className="px-4 py-3">
-                          <span className="text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4">
+                          <span className="text-base font-medium text-gray-900">
                             {gradeObj.grade}
                           </span>
                         </td>
 
                         {/* Quota Input */}
-                        <td className="px-4 py-3">
-                          <div className="flex justify-center items-center gap-2">
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center items-center gap-4">
                             <input
                               type="number"
                               min="0"
                               value={gradeQuotas[gradeObj.code_grade] || 0}
                               onChange={(e) => handleQuotaChange(gradeObj.code_grade, e.target.value)}
-                              className="w-20 px-3 py-1.5 text-center text-sm font-semibold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                              className="w-24 px-3 py-2 text-center text-sm font-semibold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
                             />
 
                             {/* Save Button - Shows when modified */}
-                            {isModified(gradeObj.code_grade) && saveStatus[gradeObj.code_grade] !== 'success' && (
+                              {isModified(gradeObj.code_grade) && saveStatus[gradeObj.code_grade] !== 'success' && (
                               <button
                                 onClick={() => handleSaveGrade(gradeObj.code_grade)}
                                 disabled={savingGrades[gradeObj.code_grade]}
-                                className="p-1.5 hover:bg-orange-100 rounded-lg transition-colors disabled:opacity-50"
+                                className="p-2 hover:bg-orange-100 rounded-lg transition-colors disabled:opacity-50"
                                 title="Enregistrer ce quota"
                               >
                                 <Save size={16} className="text-orange-600" />
@@ -238,6 +345,141 @@ const SettingsScreen = () => {
                   </tr>
                 </tfoot>
               </table>
+            </div>
+          </Card>
+
+          {/* Email Configuration Card - placed below the grades */}
+          <Card className="shadow-lg mt-6">
+            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-sky-50 to-cyan-50 border-b border-sky-100">
+              <div className="p-2 bg-white rounded-lg shadow-sm">
+                <GraduationCap size={20} className="text-cyan-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Configuration Email (SMTP)</h3>
+                <p className="text-xs text-gray-600">Configurer et tester l'envoi d'emails</p>
+              </div>
+            </div>
+
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">SMTP Server</label>
+                  <input
+                    name="SMTP_SERVER"
+                    placeholder="smtp.example.com"
+                    value={emailConfig.SMTP_SERVER}
+                    onChange={(e) => handleEmailFieldChange('SMTP_SERVER', e.target.value)}
+                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">SMTP Port</label>
+                  <input
+                    name="SMTP_PORT"
+                    type="number"
+                    placeholder="587"
+                    value={emailConfig.SMTP_PORT}
+                    onChange={(e) => handleEmailFieldChange('SMTP_PORT', parseInt(e.target.value) || 0)}
+                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">SMTP User</label>
+                  <input
+                    name="SMTP_USER"
+                    placeholder="user@example.com"
+                    value={emailConfig.SMTP_USER}
+                    onChange={(e) => handleEmailFieldChange('SMTP_USER', e.target.value)}
+                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">SMTP Password</label>
+                  <input
+                    name="SMTP_PASSWORD"
+                    placeholder="Mot de passe"
+                    value={emailConfig.SMTP_PASSWORD}
+                    type="password"
+                    onChange={(e) => handleEmailFieldChange('SMTP_PASSWORD', e.target.value)}
+                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">From Email</label>
+                  <input
+                    name="FROM_EMAIL"
+                    placeholder="from@example.com"
+                    value={emailConfig.FROM_EMAIL}
+                    onChange={(e) => handleEmailFieldChange('FROM_EMAIL', e.target.value)}
+                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">From Name</label>
+                  <input
+                    name="FROM_NAME"
+                    placeholder="Service Exams"
+                    value={emailConfig.FROM_NAME}
+                    onChange={(e) => handleEmailFieldChange('FROM_NAME', e.target.value)}
+                    className="mt-2 w-full px-3 py-2 border rounded-lg"
+                  />
+                </div>
+              </div>
+
+              {/* Test recipient field - explicit input for testing the mail */}
+              <div className="mt-4">
+                <label className="text-sm font-medium text-gray-700">Adresse destinataire pour le test</label>
+                <input
+                  placeholder="ex: test@example.com"
+                  name="TEST_RECIPIENT"
+                  value={emailConfig.TEST_RECIPIENT || emailConfig.FROM_EMAIL}
+                  onChange={(e) => handleEmailFieldChange('TEST_RECIPIENT', e.target.value)}
+                  className="mt-2 w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 mt-4">
+                <button
+                  onClick={handleSaveEmailConfig}
+                  disabled={emailLoading}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                >
+                  <Save size={16} /> Enregistrer
+                </button>
+                {emailSaveStatus === 'success' && (
+                  <span className="text-sm text-green-600 font-medium">{emailSaveMessage}</span>
+                )}
+                {emailSaveStatus === 'error' && (
+                  <span className="text-sm text-red-600 font-medium">{emailSaveMessage}</span>
+                )}
+
+                <button
+                  onClick={handleTestEmail}
+                  disabled={emailLoading}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${emailTestStatus === 'success' ? 'bg-green-600 text-white border-green-700' : emailTestStatus === 'error' ? 'bg-red-100 text-red-700 border-red-300' : 'bg-white text-gray-700 border-gray-200'} disabled:opacity-50`}
+                >
+                  {emailTestStatus === 'success' ? (
+                    <>
+                      <CheckCircle size={16} /> Test réussi
+                    </>
+                  ) : emailTestStatus === 'error' ? (
+                    <>
+                      <XCircle size={16} /> Test échoué
+                    </>
+                  ) : (
+                    'Tester le mail'
+                  )}
+                </button>
+              </div>
+
+              {emailTestStatus === 'error' && (
+                <p className="mt-2 text-sm text-red-600">{emailTestMessage}</p>
+              )}
             </div>
           </Card>
         </div>

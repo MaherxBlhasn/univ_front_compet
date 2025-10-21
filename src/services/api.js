@@ -463,6 +463,61 @@ export const sendConvocationsByEmail = async (sessionId, filenames) => {
   return await response.json()
 }
 
+// ==================== EMAIL CONFIGURATION ====================
+
+export const getEmailConfig = async () => {
+  const response = await fetch(
+    `${API_CONFIG.baseURL}${API_CONFIG.endpoints.emailConfig}`,
+    {
+      method: 'GET',
+      headers: API_CONFIG.headers,
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || `Failed to fetch email config: ${response.status}`)
+  }
+
+  return await response.json()
+}
+
+export const setEmailConfig = async (config) => {
+  const response = await fetch(
+    `${API_CONFIG.baseURL}${API_CONFIG.endpoints.emailConfig}`,
+    {
+      method: 'POST',
+      headers: API_CONFIG.headers,
+      body: JSON.stringify(config),
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || `Failed to set email config: ${response.status}`)
+  }
+
+  return await response.json()
+}
+
+export const testEmailConfig = async (to_email) => {
+  const response = await fetch(
+    `${API_CONFIG.baseURL}${API_CONFIG.endpoints.emailTestConfig}`,
+    {
+      method: 'POST',
+      headers: API_CONFIG.headers,
+      body: JSON.stringify({ to_email }),
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || `Email test failed: ${response.status}`)
+  }
+
+  return await response.json()
+}
+
 // ==================== STATISTICS ====================
 
 export const fetchSessionStatistics = async (id_session) => {
@@ -570,4 +625,8 @@ export default {
   deleteAllFiles,
   deleteSessionFiles,
   cleanupEmptyFolders,
+  // Email
+  getEmailConfig,
+  setEmailConfig,
+  testEmailConfig,
 }

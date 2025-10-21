@@ -68,6 +68,10 @@ const API_CONFIG = {
     deleteQuotasBySession: (id) => `/api/quota-enseignants/session/${id}`,
     resetQuotasBySession: (id) => `/api/quota-enseignants/reset/session/${id}`,
     resetAllQuotas: '/api/quota-enseignants/reset/all',
+  // Email configuration & testing
+  emailConfig: '/api/email/config',
+  emailTest: '/api/email/test',
+  emailTestConfig: '/api/email/test-email-config',
   },
   headers: {
     'Content-Type': 'application/json',
