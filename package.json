@@ -6,6 +6,36 @@
   "main": "./out/main/index.js",
   "author": "example.com",
   "homepage": "https://electron-vite.org",
+  "build": {
+    "appId": "com.university.surveillance",
+    "productName": "UnivSurveillance",
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "extraResources": [
+      {
+        "from": "python",
+        "to": "python",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": ["**/*", "!**/__pycache__", "!**/*.pyc", "!**/app.build", "!**/app.dist", "!**/build", "!**/dist"]
+      }
+    ],
+    "files": [
+      "out/**/*",
+      "resources/**/*"
+    ]
+  },
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
