@@ -1,6 +1,91 @@
-node_modules
-dist
-out
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+out/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+.idea/
 .DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 .eslintcache
-*.log*
+
+# OS files
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python runtime files (keep python/ folder but exclude runtime artifacts)
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.pyc
+**/*.pyo
+**/*.pyd
+*.so
+*.egg
+*.egg-info/
+
+# Python virtual environments (if any inside project)
+**/venv/
+**/env/
+**/ENV/
+
+# SQLite databases (runtime)
+backend/*.db
+backend/*.sqlite3
+python/*.db
+python/*.sqlite3
+
+# Python uploads/temp files
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/test_files/*
+!backend/test_files/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Distribution archives (keep embedded python folder structure)
+*.zip
+!python-3.11.9-embed-amd64.zip
+
+# Documentation that changes frequently (optional - remove if you want to track these)
+CHECKLIST.md
+COMMANDS.md
+FIX_APPLIED.md
+NEXT_STEPS.md
+QUICK_START.md
+README_QUICK.md
+SETUP_GUIDE.md
+SOLUTION_SUMMARY.md
+TROUBLESHOOTING.md
